@@ -1,0 +1,139 @@
+.app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.app-header {
+  margin-bottom: 2rem;
+}
+
+.app-header h1 {
+  font-size: 3.2rem;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.app-header p {
+  color: #888;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 8px;
+  color: #a5b4fc;
+}
+
+.logout-btn {
+  padding: 0.5rem 1rem;
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+}
+
+.status-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 2rem;
+  min-width: 300px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-card h2 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.status.success {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.status.success .status-indicator {
+  background: #22c55e;
+}
+
+.status.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.status.error .status-indicator {
+  background: #ef4444;
+}
+
+.status.loading {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.info-section {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.info-section h3 {
+  margin-bottom: 1rem;
+}
+
+.info-section ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-section li {
+  padding: 0.5rem 0;
+}
+
+@media (prefers-color-scheme: light) {
+  .status-card,
+  .info-section {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+}
