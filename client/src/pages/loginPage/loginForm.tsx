@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -112,12 +112,6 @@ export function LoginForm({
           </div>
         </form>
 
-        <p className="mt-10 text-center text-sm text-gray-400">
-          Not a member?{" "}
-          <Link to="/register" className="font-semibold text-indigo-400 hover:text-indigo-300">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   );

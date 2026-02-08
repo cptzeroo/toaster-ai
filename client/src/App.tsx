@@ -1,9 +1,8 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { LoginPage } from '@/pages/loginPage/loginPage';
-import { RegisterPage } from '@/pages/registerPage/registerPage';
 import './App.css';
 
 interface HealthStatus {
@@ -85,7 +84,8 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {/* Registration is disabled - redirect to login */}
+      <Route path="/register" element={<Navigate to="/login" replace />} />
       <Route
         path="/"
         element={

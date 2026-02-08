@@ -5,6 +5,7 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -27,11 +28,11 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 409, description: 'Username already exists' })
-  register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  @ApiOperation({ summary: 'Register a new user (DISABLED)' })
+  @ApiResponse({ status: 403, description: 'Registration is disabled' })
+  register(@Body() _registerDto: RegisterDto) {
+    // Registration is disabled - users must be created by an admin
+    throw new ForbiddenException('Registration is disabled');
   }
 
   @Public()
