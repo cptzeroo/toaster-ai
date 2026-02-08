@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { VALIDATION } from "@/constants/validation";
 
 export function RegisterForm({
   className,
@@ -21,18 +22,18 @@ export function RegisterForm({
     e.preventDefault();
     setError("");
 
-    if (username.length < 3) {
-      setError("Username must be at least 3 characters");
+    if (username.length < VALIDATION.USERNAME.MIN_LENGTH) {
+      setError(VALIDATION.USERNAME.MESSAGE);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError(VALIDATION.PASSWORD_CONFIRM.MESSAGE);
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    if (password.length < VALIDATION.PASSWORD.MIN_LENGTH) {
+      setError(VALIDATION.PASSWORD.MESSAGE);
       return;
     }
 
