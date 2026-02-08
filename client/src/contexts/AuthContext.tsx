@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { ERROR_MESSAGES } from '@/constants/error-messages';
 
 interface User {
   id: string;
@@ -30,6 +31,38 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
+/**
+ * Safely parse JSON from response, returns null if parsing fails
+ */
+async function safeJsonParse(response: Response): Promise<any | null> {
+  try {
+    const text = await response.text();
+    if (!text) return null;
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract error message from API response or return default message
+ */
+function getErrorMessage(data: any, defaultMessage: string): string {
+  if (!data) return defaultMessage;
+  
+  // Handle NestJS validation errors (array of messages)
+  if (Array.isArray(data.message)) {
+    return data.message[0];
+  }
+  
+  // Handle standard error message
+  if (typeof data.message === 'string') {
+    return data.message;
+  }
+  
+  return defaultMessage;
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
@@ -47,9 +80,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
             },
           });
           if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-            setToken(storedToken);
+            const userData = await safeJsonParse(response);
+            if (userData) {
+              setUser(userData);
+              setToken(storedToken);
+            } else {
+              localStorage.removeItem('token');
+              setToken(null);
+            }
           } else {
             // Token is invalid, clear it
             localStorage.removeItem('token');
@@ -67,40 +105,60 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login failed');
+    let response: Response;
+    
+    try {
+      response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
+    } catch {
+      throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
     }
 
-    const data = await response.json();
+    const data = await safeJsonParse(response);
+
+    if (!response.ok) {
+      throw new Error(getErrorMessage(data, ERROR_MESSAGES.LOGIN_FAILED));
+    }
+
+    if (!data || !data.access_token) {
+      throw new Error(ERROR_MESSAGES.LOGIN_FAILED);
+    }
+
     localStorage.setItem('token', data.access_token);
     setToken(data.access_token);
     setUser(data.user);
   }, []);
 
   const register = useCallback(async (username: string, password: string, name?: string) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password, name }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Registration failed');
+    let response: Response;
+    
+    try {
+      response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password, name }),
+      });
+    } catch {
+      throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
     }
 
-    const data = await response.json();
+    const data = await safeJsonParse(response);
+
+    if (!response.ok) {
+      throw new Error(getErrorMessage(data, ERROR_MESSAGES.REGISTER_FAILED));
+    }
+
+    if (!data || !data.access_token) {
+      throw new Error(ERROR_MESSAGES.REGISTER_FAILED);
+    }
+
     localStorage.setItem('token', data.access_token);
     setToken(data.access_token);
     setUser(data.user);
