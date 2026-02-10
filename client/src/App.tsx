@@ -4,7 +4,9 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { SidebarLayout } from '@/components/sidebar-layout';
 import { LoginPage } from '@/pages/loginPage/loginPage';
 import { DashboardPage } from '@/pages/dashboardPage/dashboardPage';
+import { ChatPage } from '@/pages/chatPage/chatPage';
 import { PlaceholderPage } from '@/pages/placeholderPage/placeholderPage';
+import { Toaster } from 'sonner';
 
 function AppRoutes() {
   return (
@@ -22,6 +24,7 @@ function AppRoutes() {
         }
       >
         <Route path="/" element={<DashboardPage />} />
+        <Route path="/chat" element={<ChatPage />} />
         <Route
           path="/activity"
           element={
@@ -76,6 +79,7 @@ function App() {
   return (
     <AuthProvider>
       <AppRoutes />
+      <Toaster richColors position="top-right" />
     </AuthProvider>
   );
 }

@@ -4,4 +4,5 @@ export const ERROR_MESSAGES = {
   REGISTER_FAILED: 'Registration failed. Please try again.',
   SESSION_EXPIRED: 'Your session has expired. Please login again.',
   UNKNOWN_ERROR: 'An unexpected error occurred. Please try again.',
+  CHAT_FAILED: 'Failed to get AI response. Please try again.',
 } as const;

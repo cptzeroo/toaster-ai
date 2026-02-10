@@ -43,6 +43,10 @@ const data = {
           title: "Activity",
           url: "/activity",
         },
+        {
+          title: "AI Chat",
+          url: "/chat",
+        },
       ],
     },
     {

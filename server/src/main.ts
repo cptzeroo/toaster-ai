@@ -22,7 +22,7 @@ async function bootstrap() {
   );
 
   // API prefix
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api/v1');
 
   // Swagger documentation
   const config = new DocumentBuilder()
@@ -32,11 +32,11 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Server is running on http://localhost:${port}`);
-  console.log(`Swagger docs available at http://localhost:${port}/api/docs`);
+  console.log(`Swagger docs available at http://localhost:${port}/api/v1/docs`);
 }
 bootstrap();

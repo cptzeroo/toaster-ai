@@ -16,6 +16,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
   "/activity": "Activity",
+  "/chat": "AI Chat",
   "/users": "Users",
   "/notifications": "Notifications",
   "/settings": "Settings",

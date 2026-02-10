@@ -54,7 +54,12 @@ export class UserService {
     return bcrypt.compare(plainPassword, hashedPassword);
   }
 
-  
+  async setTokenValidFrom(userId: string, date: Date): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      tokenValidFrom: date,
+    });
+  }
+
   async invalidateTokens(userId: string): Promise<void> {
     await this.userModel.findByIdAndUpdate(userId, {
       tokenValidFrom: new Date(),

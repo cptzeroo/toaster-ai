@@ -4,6 +4,7 @@ import {
   ExecutionContext,
   UnauthorizedException,
   Inject,
+  Logger,
   forwardRef,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -13,6 +14,8 @@ import { AuthService } from '../auth.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
+  private readonly logger = new Logger(JwtAuthGuard.name);
+
   constructor(
     private jwtService: JwtService,
     private reflector: Reflector,
@@ -31,9 +34,11 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
+    const route = `${request.method} ${request.url}`;
     const token = this.extractToken(request);
 
     if (!token) {
+      this.logger.warn(`No token provided for: ${route}`);
       throw new UnauthorizedException('No token provided');
     }
 
@@ -43,6 +48,7 @@ export class JwtAuthGuard implements CanActivate {
       // Check if token was issued before user's tokenValidFrom (invalidated)
       const isValid = await this.authService.isTokenValid(payload);
       if (!isValid) {
+        this.logger.warn(`Token invalidated for ${payload.username} on: ${route}`);
         throw new UnauthorizedException('Token has been invalidated');
       }
 
@@ -51,6 +57,7 @@ export class JwtAuthGuard implements CanActivate {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
+      this.logger.warn(`Invalid token for: ${route} - ${(error as Error).message}`);
       throw new UnauthorizedException('Invalid token');
     }
 

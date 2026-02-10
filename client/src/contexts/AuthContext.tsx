@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { ERROR_MESSAGES } from '@/constants/error-messages';
+import { API_ENDPOINTS } from '@/constants/api';
+import { createApiClient, getErrorMessage } from '@/lib/api';
 
 interface User {
   id: string;
@@ -14,7 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string, name?: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (options?: { serverLogout?: boolean }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,42 +33,16 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-/**
- * Safely parse JSON from response, returns null if parsing fails
- */
-async function safeJsonParse(response: Response): Promise<any | null> {
-  try {
-    const text = await response.text();
-    if (!text) return null;
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Extract error message from API response or return default message
- */
-function getErrorMessage(data: any, defaultMessage: string): string {
-  if (!data) return defaultMessage;
-  
-  // Handle NestJS validation errors (array of messages)
-  if (Array.isArray(data.message)) {
-    return data.message[0];
-  }
-  
-  // Handle standard error message
-  if (typeof data.message === 'string') {
-    return data.message;
-  }
-  
-  return defaultMessage;
-}
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [isLoading, setIsLoading] = useState(true);
+
+  // Use ref so the API client always has the latest token
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+
+  const api = useRef(createApiClient(() => tokenRef.current)).current;
 
   // Check if user is authenticated on mount
   useEffect(() => {
@@ -74,22 +50,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const storedToken = localStorage.getItem('token');
       if (storedToken) {
         try {
-          const response = await fetch('/api/auth/profile', {
-            headers: {
-              Authorization: `Bearer ${storedToken}`,
-            },
-          });
-          if (response.ok) {
-            const userData = await safeJsonParse(response);
-            if (userData) {
-              setUser(userData);
-              setToken(storedToken);
-            } else {
-              localStorage.removeItem('token');
-              setToken(null);
-            }
+          // Create a one-off client with the stored token for init
+          const initApi = createApiClient(() => storedToken);
+          const { data, ok } = await initApi.get<User>(API_ENDPOINTS.AUTH.PROFILE);
+
+          if (ok && data) {
+            setUser(data);
+            setToken(storedToken);
           } else {
-            // Token is invalid, clear it
             localStorage.removeItem('token');
             setToken(null);
           }
@@ -105,23 +73,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    let response: Response;
-    
-    try {
-      response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-    } catch {
-      throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
-    }
+    const { data, ok } = await api.post<{ access_token: string; user: User }>(
+      API_ENDPOINTS.AUTH.LOGIN,
+      { username, password },
+    );
 
-    const data = await safeJsonParse(response);
-
-    if (!response.ok) {
+    if (!ok) {
       throw new Error(getErrorMessage(data, ERROR_MESSAGES.LOGIN_FAILED));
     }
 
@@ -132,26 +89,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.setItem('token', data.access_token);
     setToken(data.access_token);
     setUser(data.user);
-  }, []);
+  }, [api]);
 
   const register = useCallback(async (username: string, password: string, name?: string) => {
-    let response: Response;
-    
-    try {
-      response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password, name }),
-      });
-    } catch {
-      throw new Error(ERROR_MESSAGES.NETWORK_ERROR);
-    }
+    const { data, ok } = await api.post<{ access_token: string; user: User }>(
+      API_ENDPOINTS.AUTH.REGISTER,
+      { username, password, name },
+    );
 
-    const data = await safeJsonParse(response);
-
-    if (!response.ok) {
+    if (!ok) {
       throw new Error(getErrorMessage(data, ERROR_MESSAGES.REGISTER_FAILED));
     }
 
@@ -162,18 +108,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.setItem('token', data.access_token);
     setToken(data.access_token);
     setUser(data.user);
-  }, []);
+  }, [api]);
 
-  const logout = useCallback(async () => {
-    // Call server to invalidate the token
-    if (token) {
+  const logout = useCallback(async (options?: { serverLogout?: boolean }) => {
+    const shouldCallServer = options?.serverLogout ?? true;
+
+    // Only call server logout when the user explicitly logs out
+    // Skip server call when logging out due to expired/invalid token
+    if (shouldCallServer && tokenRef.current) {
       try {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await api.post(API_ENDPOINTS.AUTH.LOGOUT);
       } catch {
         // Even if server call fails, still clear local state
       }
@@ -182,7 +126,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-  }, [token]);
+  }, [api]);
 
   const value: AuthContextType = {
     user,

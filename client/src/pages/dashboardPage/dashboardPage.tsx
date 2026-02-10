@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react"
 import { Activity, Server, Users, Bell } from "lucide-react"
+import { API_ENDPOINTS } from "@/constants/api"
 
 interface HealthStatus {
   status: string
@@ -13,7 +14,7 @@ export function DashboardPage() {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const response = await fetch("/api/health")
+        const response = await fetch(API_ENDPOINTS.HEALTH)
         if (response.ok) {
           const data = await response.json()
           setHealth(data)
@@ -110,7 +111,7 @@ export function DashboardPage() {
             Server runs on <code className="text-foreground">http://localhost:3000</code>
           </li>
           <li>
-            API docs at <code className="text-foreground">http://localhost:3000/api/docs</code>
+            API docs at <code className="text-foreground">http://localhost:3000/api/v1/docs</code>
           </li>
         </ul>
       </div>

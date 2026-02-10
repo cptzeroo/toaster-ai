@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
@@ -23,6 +23,8 @@ export interface AuthResponse {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
@@ -47,9 +49,11 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
+    this.logger.log(`Login attempt for username: ${loginDto.username}`);
     const user = await this.userService.findByUsername(loginDto.username);
 
     if (!user) {
+      this.logger.warn(`Login failed - user not found: ${loginDto.username}`);
       throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
     }
 
@@ -59,10 +63,12 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      this.logger.warn(`Login failed - invalid password for: ${loginDto.username}`);
       throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
     }
 
     if (!user.isActive) {
+      this.logger.warn(`Login failed - account disabled: ${loginDto.username}`);
       throw new UnauthorizedException(ERROR_MESSAGES.AUTH.ACCOUNT_DISABLED);
     }
 
@@ -71,8 +77,21 @@ export class AuthService {
       username: user.username,
     };
 
+    // Sign token first, then set tokenValidFrom to match the token's iat
+    const accessToken = this.jwtService.sign(payload);
+    const decoded = this.jwtService.decode(accessToken) as JwtPayload;
+    const tokenIssuedAt = new Date((decoded.iat || 0) * 1000);
+
+    // Set tokenValidFrom to the token's iat so this token (and any newer) is valid
+    await this.userService.setTokenValidFrom(user._id.toString(), tokenIssuedAt);
+
+    this.logger.log(
+      `Login successful for: ${loginDto.username} ` +
+      `(tokenIat: ${tokenIssuedAt.toISOString()})`,
+    );
+
     return {
-      access_token: this.jwtService.sign(payload),
+      access_token: accessToken,
       user: {
         id: user._id.toString(),
         username: user.username,
@@ -82,7 +101,7 @@ export class AuthService {
   }
 
   async logout(userId: string): Promise<{ message: string }> {
-    // Update tokenValidFrom to invalidate all existing tokens
+    this.logger.log(`Logout - invalidating tokens for userId: ${userId}`);
     await this.userService.invalidateTokens(userId);
     return { message: 'Logged out successfully' };
   }
@@ -90,7 +109,13 @@ export class AuthService {
   async isTokenValid(payload: JwtPayload): Promise<boolean> {
     const user = await this.userService.findById(payload.sub);
 
-    if (!user || !user.isActive) {
+    if (!user) {
+      this.logger.warn(`Token validation failed - user not found: ${payload.sub}`);
+      return false;
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(`Token validation failed - account disabled: ${payload.username}`);
       return false;
     }
 
@@ -98,6 +123,10 @@ export class AuthService {
     if (payload.iat && user.tokenValidFrom) {
       const tokenIssuedAt = new Date(payload.iat * 1000);
       if (tokenIssuedAt < user.tokenValidFrom) {
+        this.logger.warn(
+          `Token validation failed - token invalidated for: ${payload.username} ` +
+          `(issued: ${tokenIssuedAt.toISOString()}, validFrom: ${user.tokenValidFrom.toISOString()})`,
+        );
         return false;
       }
     }
