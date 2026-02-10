@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
+import { ERROR_MESSAGES } from '@/common/constants/error-messages';
 
 @Injectable()
 export class UserService {
@@ -17,7 +18,7 @@ export class UserService {
       .exec();
 
     if (existingUser) {
-      throw new ConflictException('Username already exists');
+      throw new ConflictException(ERROR_MESSAGES.USER.USERNAME_EXISTS);
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);

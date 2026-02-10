@@ -19,6 +19,7 @@ import { RegisterDto } from './dto/register.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { JwtPayload } from './auth.service';
+import { ERROR_MESSAGES } from '@/common/constants/error-messages';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -29,10 +30,10 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Register a new user (DISABLED)' })
-  @ApiResponse({ status: 403, description: 'Registration is disabled' })
+  @ApiResponse({ status: 403, description: ERROR_MESSAGES.AUTH.REGISTRATION_DISABLED })
   register(@Body() _registerDto: RegisterDto) {
     // Registration is disabled - users must be created by an admin
-    throw new ForbiddenException('Registration is disabled');
+    throw new ForbiddenException(ERROR_MESSAGES.AUTH.REGISTRATION_DISABLED);
   }
 
   @Public()

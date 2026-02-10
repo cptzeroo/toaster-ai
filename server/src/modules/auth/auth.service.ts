@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../user/user.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ERROR_MESSAGES } from '@/common/constants/error-messages';
 
 export interface JwtPayload {
   sub: string;
@@ -49,7 +50,7 @@ export class AuthService {
     const user = await this.userService.findByUsername(loginDto.username);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
     }
 
     const isPasswordValid = await this.userService.validatePassword(
@@ -58,11 +59,11 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS);
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('Account is disabled');
+      throw new UnauthorizedException(ERROR_MESSAGES.AUTH.ACCOUNT_DISABLED);
     }
 
     const payload: JwtPayload = {
@@ -115,7 +116,7 @@ export class AuthService {
     if (payload.iat && user.tokenValidFrom) {
       const tokenIssuedAt = new Date(payload.iat * 1000);
       if (tokenIssuedAt < user.tokenValidFrom) {
-        throw new UnauthorizedException('Token has been invalidated');
+        throw new UnauthorizedException(ERROR_MESSAGES.AUTH.TOKEN_INVALIDATED);
       }
     }
 
