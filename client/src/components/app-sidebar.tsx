@@ -8,7 +8,7 @@ import {
   LogOut,
 } from "lucide-react"
 
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "@/features/auth/context/AuthContext"
 import { SearchForm } from "@/components/search-form"
 import {
   Collapsible,

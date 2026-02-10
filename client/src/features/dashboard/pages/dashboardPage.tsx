@@ -1,33 +1,23 @@
 import { useState, useEffect } from "react"
 import { Activity, Server, Users, Bell } from "lucide-react"
-import { API_ENDPOINTS } from "@/constants/api"
-
-interface HealthStatus {
-  status: string
-  timestamp: string
-}
+import { checkHealth, type HealthStatus } from "@/features/dashboard/services/healthService"
 
 export function DashboardPage() {
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const checkHealth = async () => {
+    const fetchHealth = async () => {
       try {
-        const response = await fetch(API_ENDPOINTS.HEALTH)
-        if (response.ok) {
-          const data = await response.json()
-          setHealth(data)
-          setError(null)
-        } else {
-          setError("Server returned an error")
-        }
+        const data = await checkHealth()
+        setHealth(data)
+        setError(null)
       } catch {
         setError("Unable to connect to server")
       }
     }
 
-    checkHealth()
+    fetchHealth()
   }, [])
 
   return (

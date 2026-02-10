@@ -2,11 +2,11 @@ import { useRef, useEffect } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Bot, Send, Square } from "lucide-react"
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "@/features/auth/context/AuthContext"
 import { toast } from "sonner"
-import { ERROR_MESSAGES } from "@/constants/error-messages"
+import { ERROR_MESSAGES } from "@/features/auth/constants/error-messages"
 import { API_ENDPOINTS } from "@/constants/api"
-import { ChatBubble } from "./components/chatBubble"
+import { ChatBubble } from "@/features/chat/components/chatBubble"
 
 const SUGGESTIONS = [
   "What can you help me with?",

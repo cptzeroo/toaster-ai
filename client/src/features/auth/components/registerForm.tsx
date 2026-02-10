@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
-import { VALIDATION } from "@/constants/validation";
+import { useAuth } from "@/features/auth/context/AuthContext";
+import { VALIDATION } from "@/features/auth/constants/validation";
 
 export function RegisterForm({
   className,

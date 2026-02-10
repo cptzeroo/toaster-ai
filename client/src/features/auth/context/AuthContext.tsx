@@ -1,13 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { ERROR_MESSAGES } from '@/constants/error-messages';
-import { API_ENDPOINTS } from '@/constants/api';
-import { createApiClient, getErrorMessage } from '@/lib/api';
-
-interface User {
-  id: string;
-  username: string;
-  name?: string;
-}
+import { createApiClient } from '@/lib/api';
+import { createAuthService, type User } from '@/features/auth/services/authService';
 
 interface AuthContextType {
   user: User | null;
@@ -43,6 +36,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   tokenRef.current = token;
 
   const api = useRef(createApiClient(() => tokenRef.current)).current;
+  const authService = useRef(createAuthService(api)).current;
 
   // Check if user is authenticated on mount
   useEffect(() => {
@@ -52,10 +46,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           // Create a one-off client with the stored token for init
           const initApi = createApiClient(() => storedToken);
-          const { data, ok } = await initApi.get<User>(API_ENDPOINTS.AUTH.PROFILE);
+          const initService = createAuthService(initApi);
+          const profile = await initService.getProfile();
 
-          if (ok && data) {
-            setUser(data);
+          if (profile) {
+            setUser(profile);
             setToken(storedToken);
           } else {
             localStorage.removeItem('token');
@@ -73,42 +68,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    const { data, ok } = await api.post<{ access_token: string; user: User }>(
-      API_ENDPOINTS.AUTH.LOGIN,
-      { username, password },
-    );
-
-    if (!ok) {
-      throw new Error(getErrorMessage(data, ERROR_MESSAGES.LOGIN_FAILED));
-    }
-
-    if (!data || !data.access_token) {
-      throw new Error(ERROR_MESSAGES.LOGIN_FAILED);
-    }
-
+    const data = await authService.login(username, password);
     localStorage.setItem('token', data.access_token);
     setToken(data.access_token);
     setUser(data.user);
-  }, [api]);
+  }, [authService]);
 
   const register = useCallback(async (username: string, password: string, name?: string) => {
-    const { data, ok } = await api.post<{ access_token: string; user: User }>(
-      API_ENDPOINTS.AUTH.REGISTER,
-      { username, password, name },
-    );
-
-    if (!ok) {
-      throw new Error(getErrorMessage(data, ERROR_MESSAGES.REGISTER_FAILED));
-    }
-
-    if (!data || !data.access_token) {
-      throw new Error(ERROR_MESSAGES.REGISTER_FAILED);
-    }
-
+    const data = await authService.register(username, password, name);
     localStorage.setItem('token', data.access_token);
     setToken(data.access_token);
     setUser(data.user);
-  }, [api]);
+  }, [authService]);
 
   const logout = useCallback(async (options?: { serverLogout?: boolean }) => {
     const shouldCallServer = options?.serverLogout ?? true;
@@ -116,17 +87,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Only call server logout when the user explicitly logs out
     // Skip server call when logging out due to expired/invalid token
     if (shouldCallServer && tokenRef.current) {
-      try {
-        await api.post(API_ENDPOINTS.AUTH.LOGOUT);
-      } catch {
-        // Even if server call fails, still clear local state
-      }
+      await authService.logout();
     }
 
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-  }, [api]);
+  }, [authService]);
 
   const value: AuthContextType = {
     user,

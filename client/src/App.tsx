@@ -1,11 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { AuthProvider } from '@/features/auth/context/AuthContext';
+import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { SidebarLayout } from '@/components/sidebar-layout';
-import { LoginPage } from '@/pages/loginPage/loginPage';
-import { DashboardPage } from '@/pages/dashboardPage/dashboardPage';
-import { ChatPage } from '@/pages/chatPage/chatPage';
-import { PlaceholderPage } from '@/pages/placeholderPage/placeholderPage';
+import { LoginPage } from '@/features/auth/pages/loginPage';
+import { DashboardPage } from '@/features/dashboard/pages/dashboardPage';
+import { ChatPage } from '@/features/chat/pages/chatPage';
+import { PlaceholderPage } from '@/features/shared/pages/placeholderPage';
 import { Toaster } from 'sonner';
 
 function AppRoutes() {

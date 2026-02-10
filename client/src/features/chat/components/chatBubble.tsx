@@ -1,7 +1,7 @@
 import { Bot, User, Copy, Check } from "lucide-react"
 import { useState } from "react"
 import type { UIMessage } from "ai"
-import { MarkdownContent } from "@/pages/chatPage/components/markdownContent"
+import { MarkdownContent } from "@/features/chat/components/markdownContent"
 
 interface ChatBubbleProps {
   message: UIMessage
