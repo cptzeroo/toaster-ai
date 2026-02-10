@@ -21,7 +21,6 @@ export function RegisterForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    
 
     if (username.length < VALIDATION.USERNAME.MIN_LENGTH) {
       setError(VALIDATION.USERNAME.MESSAGE);

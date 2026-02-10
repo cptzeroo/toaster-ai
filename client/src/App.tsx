@@ -1,84 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { SidebarLayout } from '@/components/sidebar-layout';
 import { LoginPage } from '@/pages/loginPage/loginPage';
-import './App.css';
-
-interface HealthStatus {
-  status: string;
-  timestamp: string;
-}
-
-function HomePage() {
-  const { user, logout } = useAuth();
-  const [health, setHealth] = useState<HealthStatus | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const response = await fetch('/api/health');
-        if (response.ok) {
-          const data = await response.json();
-          setHealth(data);
-          setError(null);
-        } else {
-          setError('Server returned an error');
-        }
-      } catch {
-        setError('Unable to connect to server');
-      }
-    };
-
-    checkHealth();
-  }, []);
-
-  return (
-    <div className="app">
-      <header className="app-header">
-        <h1>Toaster</h1>
-        <p>React + NestJS Application</p>
-        {user && (
-          <div className="user-info">
-            <span>Welcome, {user.name || user.username}</span>
-            <button onClick={logout} className="logout-btn">
-              Logout
-            </button>
-          </div>
-        )}
-      </header>
-      <main className="app-main">
-        <div className="status-card">
-          <h2>Server Status</h2>
-          {error ? (
-            <div className="status error">
-              <span className="status-indicator"></span>
-              <span>{error}</span>
-            </div>
-          ) : health ? (
-            <div className="status success">
-              <span className="status-indicator"></span>
-              <span>Connected - {health.status}</span>
-            </div>
-          ) : (
-            <div className="status loading">
-              <span>Checking connection...</span>
-            </div>
-          )}
-        </div>
-        <div className="info-section">
-          <h3>Getting Started</h3>
-          <ul>
-            <li>Client runs on <code>http://localhost:5173</code></li>
-            <li>Server runs on <code>http://localhost:3000</code></li>
-            <li>API docs at <code>http://localhost:3000/api/docs</code></li>
-          </ul>
-        </div>
-      </main>
-    </div>
-  );
-}
+import { DashboardPage } from '@/pages/dashboardPage/dashboardPage';
+import { PlaceholderPage } from '@/pages/placeholderPage/placeholderPage';
 
 function AppRoutes() {
   return (
@@ -86,14 +12,62 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       {/* Registration is disabled - redirect to login */}
       <Route path="/register" element={<Navigate to="/login" replace />} />
+
+      {/* Protected routes with sidebar layout */}
       <Route
-        path="/"
         element={
           <ProtectedRoute>
-            <HomePage />
+            <SidebarLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route path="/" element={<DashboardPage />} />
+        <Route
+          path="/activity"
+          element={
+            <PlaceholderPage
+              title="Activity"
+              description="View recent activity across your application."
+            />
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <PlaceholderPage
+              title="Users"
+              description="Manage users and their permissions."
+            />
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <PlaceholderPage
+              title="Notifications"
+              description="View and manage notifications."
+            />
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <PlaceholderPage
+              title="Settings"
+              description="Configure your application settings."
+            />
+          }
+        />
+        <Route
+          path="/health"
+          element={
+            <PlaceholderPage
+              title="Health"
+              description="Monitor system health and performance."
+            />
+          }
+        />
+      </Route>
     </Routes>
   );
 }
