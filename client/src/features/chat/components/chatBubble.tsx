@@ -1,4 +1,4 @@
-import { Bot, User, Copy, Check } from "lucide-react"
+import { User, Copy, Check } from "lucide-react"
 import { useState } from "react"
 import type { UIMessage } from "ai"
 import { MarkdownContent } from "@/features/chat/components/markdownContent"
@@ -26,8 +26,8 @@ export function ChatBubble({ message }: ChatBubbleProps) {
   return (
     <div className={`group flex gap-3 ${isUser ? "justify-end" : ""}`}>
       {!isUser && (
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <Bot className="size-4 text-primary" />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg overflow-hidden">
+          <img src="/assets/icons/toaster.png" alt="Toaster AI" className="size-8" />
         </div>
       )}
       <div

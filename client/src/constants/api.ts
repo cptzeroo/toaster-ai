@@ -7,6 +7,9 @@ export const API_ENDPOINTS = {
     LOGOUT: `${API_BASE}/auth/logout`,
     PROFILE: `${API_BASE}/auth/profile`,
   },
-  CHAT: `${API_BASE}/chat`,
+  CHAT: {
+    SEND: `${API_BASE}/chat`,
+    MODELS: `${API_BASE}/chat/models`,
+  },
   HEALTH: `${API_BASE}/health`,
 } as const;

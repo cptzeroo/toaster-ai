@@ -1,12 +1,14 @@
-import { useRef, useEffect } from "react"
+import { useRef, useEffect, useState, useMemo } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-import { Bot, Send, Square } from "lucide-react"
+import { Send, Square } from "lucide-react"
 import { useAuth } from "@/features/auth/context/AuthContext"
 import { toast } from "sonner"
 import { ERROR_MESSAGES } from "@/features/auth/constants/error-messages"
 import { API_ENDPOINTS } from "@/constants/api"
 import { ChatBubble } from "@/features/chat/components/chatBubble"
+import { ModelSelector } from "@/features/chat/components/modelSelector"
+import { DEFAULT_MODEL_ID } from "@/features/chat/constants/models"
 
 const SUGGESTIONS = [
   "What can you help me with?",
@@ -20,6 +22,25 @@ export function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL_ID)
+
+  // Keep model in a ref so the transport body closure always reads the latest value
+  const modelRef = useRef(selectedModel)
+  modelRef.current = selectedModel
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: API_ENDPOINTS.CHAT.SEND,
+        headers: () => ({
+          Authorization: `Bearer ${token}`,
+        }),
+        body: () => ({
+          model: modelRef.current,
+        }),
+      }),
+    [token],
+  )
 
   const {
     messages,
@@ -28,12 +49,7 @@ export function ChatPage() {
     sendMessage,
     stop,
   } = useChat({
-    transport: new DefaultChatTransport({
-      api: API_ENDPOINTS.CHAT,
-      headers: () => ({
-        Authorization: `Bearer ${token}`,
-      }),
-    }),
+    transport,
     onError: (err) => {
       // Handle auth errors -- session expired or token invalidated
       // Don't call server logout here -- the token is already invalid
@@ -143,9 +159,16 @@ export function ChatPage() {
               )}
             </div>
           </form>
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            AI can make mistakes. Verify important information.
-          </p>
+          <div className="mt-2 flex items-center justify-between">
+            <ModelSelector
+              value={selectedModel}
+              onChange={setSelectedModel}
+              disabled={isLoading}
+            />
+            <p className="text-xs text-muted-foreground">
+              AI can make mistakes. Verify important information.
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -160,8 +183,8 @@ function EmptyState({
   return (
     <div className="flex h-full items-center justify-center">
       <div className="text-center space-y-4 max-w-md px-4">
-        <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary/10">
-          <Bot className="size-8 text-primary" />
+        <div className="mx-auto flex size-16 items-center justify-center rounded-2xl overflow-hidden">
+          <img src="/assets/icons/toaster.png" alt="Toaster AI" className="size-16" />
         </div>
         <div>
           <h3 className="text-lg font-semibold">Toaster AI</h3>
@@ -189,8 +212,8 @@ function EmptyState({
 function TypingIndicator() {
   return (
     <div className="flex gap-3">
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-        <Bot className="size-4 text-primary" />
+      <div className="flex size-8 shrink-0 items-center justify-center rounded-lg overflow-hidden">
+        <img src="/assets/icons/toaster.png" alt="Toaster AI" className="size-8" />
       </div>
       <div className="rounded-xl bg-muted px-4 py-3">
         <div className="flex gap-1.5">

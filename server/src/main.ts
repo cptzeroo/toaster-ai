@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -20,6 +22,14 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Global exception filter -- clean error responses
+  // Set DEBUG_MODE=true in .env to get stack traces in logs + response body
+  const debugMode = process.env.DEBUG_MODE === 'true';
+  app.useGlobalFilters(new GlobalExceptionFilter(debugMode));
+
+  // Global response interceptor -- wraps all responses in { success, data, timestamp }
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   // API prefix
   app.setGlobalPrefix('api/v1');

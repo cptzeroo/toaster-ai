@@ -1,50 +1,41 @@
 import { Injectable, ConflictException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { User, UserDocument } from './schemas/user.schema';
+import { UserRepository } from './user.repository';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UserDocument } from './schemas/user.schema';
 import { ERROR_MESSAGES } from '@/common/constants/error-messages';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
-  async create(
-    createUserDto: CreateUserDto,
-  ): Promise<Omit<User, 'password'> & { _id: any }> {
-    const existingUser = await this.userModel
-      .findOne({ username: createUserDto.username.toLowerCase() })
-      .exec();
+  async create(createUserDto: CreateUserDto) {
+    const exists = await this.userRepository.existsByUsername(
+      createUserDto.username,
+    );
 
-    if (existingUser) {
+    if (exists) {
       throw new ConflictException(ERROR_MESSAGES.USER.USERNAME_EXISTS);
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    const user = new this.userModel({
+    const savedUser = await this.userRepository.create({
       ...createUserDto,
       username: createUserDto.username.toLowerCase(),
       password: hashedPassword,
     });
 
-    const savedUser = await user.save();
-
-    // Return user without password (using Omit type to exclude password)
     const { password: _, ...userWithoutPassword } = savedUser.toObject();
-    return userWithoutPassword as Omit<User, 'password'> & { _id: any };
+    return userWithoutPassword;
   }
 
   async findByUsername(username: string): Promise<UserDocument | null> {
-    return this.userModel
-      .findOne({ username: username.toLowerCase() })
-      .select('+password')
-      .exec();
+    return this.userRepository.findByUsername(username);
   }
 
   async findById(id: string): Promise<UserDocument | null> {
-    return this.userModel.findById(id).exec();
+    return this.userRepository.findById(id);
   }
 
   async validatePassword(
@@ -55,14 +46,10 @@ export class UserService {
   }
 
   async setTokenValidFrom(userId: string, date: Date): Promise<void> {
-    await this.userModel.findByIdAndUpdate(userId, {
-      tokenValidFrom: date,
-    });
+    await this.userRepository.updateTokenValidFrom(userId, date);
   }
 
   async invalidateTokens(userId: string): Promise<void> {
-    await this.userModel.findByIdAndUpdate(userId, {
-      tokenValidFrom: new Date(),
-    });
+    await this.userRepository.updateTokenValidFrom(userId, new Date());
   }
 }

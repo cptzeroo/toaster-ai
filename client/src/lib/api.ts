@@ -7,13 +7,22 @@ export interface ApiResponse<T = unknown> {
 }
 
 /**
- * Safely parse JSON from response, returns null if parsing fails
+ * Safely parse JSON from response, returns null if parsing fails.
+ * Automatically unwraps the server's standardized response envelope
+ * ({ success, data, timestamp }) so callers get the data directly.
  */
 async function safeJsonParse(response: Response): Promise<any | null> {
   try {
     const text = await response.text();
     if (!text) return null;
-    return JSON.parse(text);
+    const json = JSON.parse(text);
+
+    // Unwrap the server's { success, data } envelope on success responses
+    if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
+      return json.success ? json.data : json;
+    }
+
+    return json;
   } catch {
     return null;
   }

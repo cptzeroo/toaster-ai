@@ -1,7 +1,10 @@
-import { Controller, Post, Req, Res, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, Res, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { ChatService } from './chat.service';
+import { ChatDto } from './dto/chat.dto';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtPayload } from '../auth/auth.service';
 
 @ApiTags('Chat')
 @ApiBearerAuth()
@@ -11,19 +14,33 @@ export class ChatController {
 
   constructor(private readonly chatService: ChatService) {}
 
+  @Get('models')
+  @ApiOperation({ summary: 'Get available AI models' })
+  getModels() {
+    return this.chatService.getAvailableModels();
+  }
+
   @Post()
   @ApiOperation({ summary: 'Send a message to AI and get a streamed response' })
-  async chat(@Req() req: Request, @Res() res: Response) {
-    const { messages } = req.body;
-    const user = (req as any).user;
-
-    this.logger.log(`Chat request from ${user?.username || 'unknown'} with ${messages?.length || 0} messages`);
+  async chat(
+    @Body() chatDto: ChatDto,
+    @CurrentUser() user: JwtPayload,
+    @Res() res: Response,
+  ) {
+    this.logger.log(
+      `Chat request from ${user.username} with ${chatDto.messages.length} messages, model: ${chatDto.model || 'default'}`,
+    );
 
     try {
-      const result = await this.chatService.chat(messages);
+      const result = await this.chatService.chat(
+        chatDto.messages,
+        chatDto.model,
+      );
       result.pipeUIMessageStreamToResponse(res);
     } catch (error) {
-      this.logger.error(`Chat error for ${user?.username || 'unknown'}: ${(error as Error).message}`);
+      this.logger.error(
+        `Chat error for ${user.username}: ${(error as Error).message}`,
+      );
       throw error;
     }
   }

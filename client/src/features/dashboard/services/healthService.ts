@@ -12,5 +12,12 @@ export async function checkHealth(): Promise<HealthStatus> {
     throw new Error('Server returned an error');
   }
 
-  return response.json();
+  const json = await response.json();
+
+  // Unwrap the server's { success, data } envelope
+  if (json && typeof json === 'object' && 'success' in json && 'data' in json) {
+    return json.data;
+  }
+
+  return json;
 }
