@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from "react-router-dom"
+import { Moon, Sun } from "lucide-react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,6 +13,8 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
+import { useTheme } from "@/features/settings/context/ThemeContext"
+import { useAuth } from "@/features/auth/context/AuthContext"
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
@@ -26,6 +29,14 @@ const pageTitles: Record<string, string> = {
 export function SidebarLayout() {
   const location = useLocation()
   const title = pageTitles[location.pathname] || "Dashboard"
+  const { theme, toggleTheme } = useTheme()
+  const { updateSettings } = useAuth()
+
+  const handleToggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    toggleTheme()
+    updateSettings({ theme: newTheme }).catch(() => {})
+  }
 
   return (
     <SidebarProvider>
@@ -41,6 +52,15 @@ export function SidebarLayout() {
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          <div className="ml-auto">
+            <button
+              onClick={handleToggleTheme}
+              className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            </button>
+          </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4">
           <Outlet />

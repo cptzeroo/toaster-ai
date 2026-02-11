@@ -58,7 +58,7 @@ export function RegisterForm({
           src="/assets/icons/toaster.png"
           className="mx-auto h-20 w-auto"
         />
-        <h2 className="mt-8 text-center text-2xl font-bold tracking-tight text-white">
+        <h2 className="mt-8 text-center text-2xl font-bold tracking-tight text-foreground">
           Create your account
         </h2>
       </div>
@@ -73,7 +73,7 @@ export function RegisterForm({
           )}
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-100">
+            <label htmlFor="name" className="block text-sm font-medium text-foreground">
               Name (optional)
             </label>
             <div className="mt-2">
@@ -85,13 +85,13 @@ export function RegisterForm({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={isLoading}
-                className="block w-full rounded-md bg-white/5 px-3 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm disabled:opacity-50"
+                className="block w-full rounded-md bg-input px-3 py-2 text-base text-foreground outline-1 -outline-offset-1 outline-border placeholder:text-muted-foreground focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm disabled:opacity-50"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-100">
+            <label htmlFor="username" className="block text-sm font-medium text-foreground">
               Username
             </label>
             <div className="mt-2">
@@ -104,13 +104,13 @@ export function RegisterForm({
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
-                className="block w-full rounded-md bg-white/5 px-3 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm disabled:opacity-50"
+                className="block w-full rounded-md bg-input px-3 py-2 text-base text-foreground outline-1 -outline-offset-1 outline-border placeholder:text-muted-foreground focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm disabled:opacity-50"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-100">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground">
               Password
             </label>
             <div className="mt-2">
@@ -123,13 +123,13 @@ export function RegisterForm({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
-                className="block w-full rounded-md bg-white/5 px-3 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm disabled:opacity-50"
+                className="block w-full rounded-md bg-input px-3 py-2 text-base text-foreground outline-1 -outline-offset-1 outline-border placeholder:text-muted-foreground focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm disabled:opacity-50"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-100">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground">
               Confirm Password
             </label>
             <div className="mt-2">
@@ -142,7 +142,7 @@ export function RegisterForm({
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isLoading}
-                className="block w-full rounded-md bg-white/5 px-3 py-2 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm disabled:opacity-50"
+                className="block w-full rounded-md bg-input px-3 py-2 text-base text-foreground outline-1 -outline-offset-1 outline-border placeholder:text-muted-foreground focus:outline-2 focus:-outline-offset-2 focus:outline-primary sm:text-sm disabled:opacity-50"
               />
             </div>
           </div>
@@ -151,16 +151,16 @@ export function RegisterForm({
             <button
               type="submit"
               disabled={isLoading}
-              className="flex w-full justify-center rounded-md bg-indigo-500 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex w-full justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Creating account..." : "Sign up"}
             </button>
           </div>
         </form>
 
-        <p className="mt-10 text-center text-sm text-gray-400">
+        <p className="mt-10 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-indigo-400 hover:text-indigo-300">
+          <Link to="/login" className="font-semibold text-primary hover:text-primary/80">
             Sign in
           </Link>
         </p>

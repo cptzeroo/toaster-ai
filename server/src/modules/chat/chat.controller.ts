@@ -30,6 +30,16 @@ export class ChatController {
     private readonly chatSessionService: ChatSessionService,
   ) {}
 
+  // ─── Helpers ──────────────────────────────────────────────
+
+  private extractUserText(message: any): string | null {
+    if (!message?.parts) return null;
+    const textParts = message.parts
+      .filter((p: any) => p.type === 'text')
+      .map((p: any) => p.text);
+    return textParts.length > 0 ? textParts.join(' ') : null;
+  }
+
   // ─── Models ───────────────────────────────────────────────
 
   @Get('models')
@@ -130,9 +140,14 @@ export class ChatController {
 
       // After streaming completes, persist the assistant response asynchronously
       if (chatDto.sessionId) {
-        result.text
-          .then((fullText: string) => {
-            return this.chatSessionService.addMessage(
+        const isFirstMessage = chatDto.messages.length === 1;
+        const firstUserText = isFirstMessage
+          ? this.extractUserText(chatDto.messages[0])
+          : null;
+
+        result.text.then(async (fullText: string) => {
+            // Save assistant message
+            await this.chatSessionService.addMessage(
               chatDto.sessionId!,
               user.sub,
               {
@@ -140,6 +155,19 @@ export class ChatController {
                 parts: [{ type: 'text', text: fullText }],
               },
             );
+
+            // Generate title from first user message (only on the first exchange)
+            if (isFirstMessage && firstUserText) {
+              const title = await this.chatService.generateTitle(firstUserText);
+              await this.chatSessionService.updateTitle(
+                chatDto.sessionId!,
+                user.sub,
+                title,
+              );
+              this.logger.log(
+                `Auto-generated title for session ${chatDto.sessionId}: "${title}"`,
+              );
+            }
           })
           .catch((err: Error) => {
             this.logger.error(

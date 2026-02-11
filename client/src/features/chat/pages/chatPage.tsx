@@ -108,6 +108,12 @@ export function ChatPage() {
     onFinish: () => {
       // Refresh session list after each message exchange to update timestamps
       refreshSessions()
+
+      // Title generation happens server-side after the stream ends.
+      // Re-fetch after a short delay to pick up the auto-generated title.
+      if (!activeSessionId || messages.length <= 1) {
+        setTimeout(() => refreshSessions(), 3000)
+      }
     },
   })
 

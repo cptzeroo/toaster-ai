@@ -6,9 +6,12 @@ import {
   Settings,
   Users,
   LogOut,
+  Moon,
+  Sun,
 } from "lucide-react"
 
 import { useAuth } from "@/features/auth/context/AuthContext"
+import { useTheme } from "@/features/settings/context/ThemeContext"
 import { SearchForm } from "@/components/search-form"
 import {
   Collapsible,
@@ -83,7 +86,15 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout } = useAuth()
+  const { user, logout, updateSettings } = useAuth()
+  const { theme, toggleTheme } = useTheme()
+
+  const handleToggleTheme = async () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    toggleTheme();
+    // Persist to server in background
+    updateSettings({ theme: newTheme }).catch(() => {});
+  }
 
   const handleLogout = async () => {
     await logout()
@@ -163,6 +174,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleToggleTheme}>
+              {theme === 'dark' ? (
+                <Sun className="size-4" />
+              ) : (
+                <Moon className="size-4" />
+              )}
+              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleLogout}>
               <LogOut className="size-4" />

@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import { createApiClient } from '@/lib/api';
 import { createAuthService, type User } from '@/features/auth/services/authService';
 import { createSettingsService, type UserSettings } from '@/features/settings/services/settingsService';
+import { useTheme } from '@/features/settings/context/ThemeContext';
 
 interface AuthContextType {
   user: User | null;
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { setTheme } = useTheme();
 
   // Use ref so the API client always has the latest token
   const tokenRef = useRef(token);
@@ -59,10 +61,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(profile);
             setToken(storedToken);
 
-            // Fetch user settings after auth
+            // Fetch user settings after auth and sync theme
             const userSettings = await initSettingsService.getSettings();
             if (userSettings) {
               setSettings(userSettings);
+              if (userSettings.theme === 'dark' || userSettings.theme === 'light') {
+                setTheme(userSettings.theme);
+              }
             }
           } else {
             localStorage.removeItem('token');
@@ -85,12 +90,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setToken(data.access_token);
     setUser(data.user);
 
-    // Fetch settings after login
+    // Fetch settings after login and sync theme
     const userSettings = await settingsService.getSettings();
     if (userSettings) {
       setSettings(userSettings);
+      if (userSettings.theme === 'dark' || userSettings.theme === 'light') {
+        setTheme(userSettings.theme);
+      }
     }
-  }, [authService, settingsService]);
+  }, [authService, settingsService, setTheme]);
 
   const register = useCallback(async (username: string, password: string, name?: string) => {
     const data = await authService.register(username, password, name);
@@ -98,12 +106,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setToken(data.access_token);
     setUser(data.user);
 
-    // Fetch settings after register
+    // Fetch settings after register and sync theme
     const userSettings = await settingsService.getSettings();
     if (userSettings) {
       setSettings(userSettings);
+      if (userSettings.theme === 'dark' || userSettings.theme === 'light') {
+        setTheme(userSettings.theme);
+      }
     }
-  }, [authService, settingsService]);
+  }, [authService, settingsService, setTheme]);
 
   const logout = useCallback(async (options?: { serverLogout?: boolean }) => {
     const shouldCallServer = options?.serverLogout ?? true;
@@ -124,8 +135,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const updated = await settingsService.updateSettings(updates);
     if (updated) {
       setSettings(updated);
+      // Sync theme if it was updated
+      if (updates.theme && (updates.theme === 'dark' || updates.theme === 'light')) {
+        setTheme(updates.theme);
+      }
     }
-  }, [settingsService]);
+  }, [settingsService, setTheme]);
 
   const value: AuthContextType = {
     user,

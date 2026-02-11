@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider, useTheme } from '@/features/settings/context/ThemeContext';
 import { AuthProvider } from '@/features/auth/context/AuthContext';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { SidebarLayout } from '@/components/sidebar-layout';
@@ -75,12 +76,19 @@ function AppRoutes() {
   );
 }
 
+function ThemedToaster() {
+  const { theme } = useTheme();
+  return <Toaster richColors position="top-right" theme={theme} />;
+}
+
 function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-      <Toaster richColors position="top-right" />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppRoutes />
+        <ThemedToaster />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { streamText, convertToModelMessages } from 'ai';
+import { streamText, generateText, convertToModelMessages } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -17,6 +17,10 @@ const SYSTEM_PROMPT =
   'You help users with questions, tasks, and general knowledge. ' +
   'Be concise, friendly, and helpful. ' +
   'Format your responses using markdown when appropriate.';
+
+const TITLE_PROMPT =
+  'Generate a short title (max 6 words) for a chat that starts with the following user message. ' +
+  'Return ONLY the title text, nothing else. No quotes, no punctuation at the end.';
 
 @Injectable()
 export class ChatService {
@@ -57,6 +61,27 @@ export class ChatService {
 
   getAvailableModels() {
     return AI_MODELS;
+  }
+
+  /**
+   * Generate a short title from the user's first message.
+   * Uses gemini-2.0-flash for speed/cost regardless of selected model.
+   */
+  async generateTitle(userMessage: string): Promise<string> {
+    try {
+      const model = this.google('gemini-2.0-flash');
+      const { text } = await generateText({
+        model,
+        system: TITLE_PROMPT,
+        prompt: userMessage,
+      });
+      return text.trim() || 'New conversation';
+    } catch (err) {
+      this.logger.warn(
+        `Failed to generate title: ${(err as Error).message}`,
+      );
+      return 'New conversation';
+    }
   }
 
   async chat(messages: UIMessage[], modelId?: string): Promise<any> {
