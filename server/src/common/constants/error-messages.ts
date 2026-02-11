@@ -8,4 +8,8 @@ export const ERROR_MESSAGES = {
   USER: {
     USERNAME_EXISTS: 'Username already exists',
   },
+  SESSION: {
+    NOT_FOUND: 'Chat session not found or has expired',
+    ACCESS_DENIED: 'You do not have access to this session',
+  },
 } as const;

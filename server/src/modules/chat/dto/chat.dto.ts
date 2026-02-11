@@ -46,4 +46,12 @@ export class ChatDto {
   @IsOptional()
   @IsString()
   trigger?: string;
+
+  @ApiPropertyOptional({
+    description: 'Session ID to persist messages to',
+    example: '507f1f77bcf86cd799439011',
+  })
+  @IsOptional()
+  @IsString()
+  sessionId?: string;
 }

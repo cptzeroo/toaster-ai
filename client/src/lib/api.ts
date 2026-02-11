@@ -99,5 +99,14 @@ export function createApiClient(getToken: () => string | null) {
         method: 'POST',
         body: body ? JSON.stringify(body) : undefined,
       }),
+
+    patch: <T = unknown>(url: string, body?: unknown) =>
+      request<T>(url, {
+        method: 'PATCH',
+        body: body ? JSON.stringify(body) : undefined,
+      }),
+
+    delete: <T = unknown>(url: string) =>
+      request<T>(url, { method: 'DELETE' }),
   };
 }
