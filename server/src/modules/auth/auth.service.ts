@@ -18,6 +18,7 @@ export interface AuthResponse {
     id: string;
     username: string;
     name?: string;
+    isSuperAdmin?: boolean;
   };
 }
 
@@ -82,13 +83,18 @@ export class AuthService {
     const decoded = this.jwtService.decode(accessToken) as JwtPayload;
     const tokenIssuedAt = new Date((decoded.iat || 0) * 1000);
 
-    // Set tokenValidFrom to the token's iat so this token (and any newer) is valid
-    await this.userService.setTokenValidFrom(user._id.toString(), tokenIssuedAt);
-
-    this.logger.log(
-      `Login successful for: ${loginDto.username} ` +
-      `(tokenIat: ${tokenIssuedAt.toISOString()})`,
-    );
+    // Skip tokenValidFrom update for multi-session users (allows multiple devices)
+    if (user.allowMultiSession) {
+      this.logger.log(
+        `Login successful for: ${loginDto.username} (multi-session, tokenIat: ${tokenIssuedAt.toISOString()})`,
+      );
+    } else {
+      // Set tokenValidFrom to the token's iat so this token (and any newer) is valid
+      await this.userService.setTokenValidFrom(user._id.toString(), tokenIssuedAt);
+      this.logger.log(
+        `Login successful for: ${loginDto.username} (tokenIat: ${tokenIssuedAt.toISOString()})`,
+      );
+    }
 
     return {
       access_token: accessToken,
@@ -96,6 +102,7 @@ export class AuthService {
         id: user._id.toString(),
         username: user.username,
         name: user.name,
+        isSuperAdmin: user.isSuperAdmin || false,
       },
     };
   }

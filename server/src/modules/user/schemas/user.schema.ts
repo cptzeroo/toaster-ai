@@ -19,6 +19,14 @@ export class User {
 
   @Prop({ type: Date, default: Date.now })
   tokenValidFrom: Date;
+
+  /** Super admin has access to all features and admin endpoints */
+  @Prop({ default: false })
+  isSuperAdmin: boolean;
+
+  /** When true, login does not invalidate previous tokens (multi-device support) */
+  @Prop({ default: false })
+  allowMultiSession: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
