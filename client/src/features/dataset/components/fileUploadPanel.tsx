@@ -13,9 +13,9 @@ import { toast } from "sonner"
 import { useAuth } from "@/features/auth/context/AuthContext"
 import { createApiClient } from "@/lib/api"
 import {
-  createAnalyticsService,
+  createDatasetService,
   type FileMetadata,
-} from "@/features/analytics/services/analyticsService"
+} from "@/features/dataset/services/datasetService"
 
 const ACCEPTED_TYPES = ".csv,.xlsx,.xls"
 
@@ -39,15 +39,15 @@ export function FileUploadPanel() {
   const [expanded, setExpanded] = useState(false)
   const [expandedFile, setExpandedFile] = useState<string | null>(null)
 
-  const analyticsService = useMemo(() => {
+  const datasetService = useMemo(() => {
     const api = createApiClient(() => tokenRef.current)
-    return createAnalyticsService(api)
+    return createDatasetService(api)
   }, [])
 
   const loadFiles = useCallback(async () => {
-    const loaded = await analyticsService.getFiles()
+    const loaded = await datasetService.getFiles()
     setFiles(loaded)
-  }, [analyticsService])
+  }, [datasetService])
 
   // Reload files on mount and when token changes (after re-login)
   useEffect(() => {
@@ -61,7 +61,7 @@ export function FileUploadPanel() {
 
       setUploading(true)
       try {
-        const result = await analyticsService.uploadFile(file)
+        const result = await datasetService.uploadFile(file)
         if (result) {
           toast.success(`Uploaded "${file.name}" successfully`)
           await loadFiles()
@@ -76,12 +76,12 @@ export function FileUploadPanel() {
         if (fileInputRef.current) fileInputRef.current.value = ""
       }
     },
-    [analyticsService, loadFiles],
+    [datasetService, loadFiles],
   )
 
   const handleDelete = useCallback(
     async (fileId: string, fileName: string) => {
-      const deleted = await analyticsService.deleteFile(fileId)
+      const deleted = await datasetService.deleteFile(fileId)
       if (deleted) {
         toast.success(`Deleted "${fileName}"`)
         await loadFiles()
@@ -89,21 +89,21 @@ export function FileUploadPanel() {
         toast.error("Failed to delete file")
       }
     },
-    [analyticsService, loadFiles],
+    [datasetService, loadFiles],
   )
 
   const handleSync = useCallback(async () => {
     setSyncing(true)
     try {
-      const updated = await analyticsService.reloadFiles()
+      const updated = await datasetService.reloadFiles()
       setFiles(updated)
       toast.success("Files synced")
     } catch {
-      toast.error("Failed to sync files")
+      toast.error("Failed to reload files")
     } finally {
       setSyncing(false)
     }
-  }, [analyticsService])
+  }, [datasetService])
 
   return (
     <div className="border-t border-border">

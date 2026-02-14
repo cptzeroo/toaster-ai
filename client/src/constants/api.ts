@@ -13,11 +13,11 @@ export const API_ENDPOINTS = {
     SESSIONS: `${API_BASE}/chat/sessions`,
     SESSION_TTL: `${API_BASE}/chat/sessions/ttl`,
   },
-  ANALYTICS: {
-    FILES: `${API_BASE}/analytics/files`,
-    RELOAD: `${API_BASE}/analytics/files/reload`,
-    QUERY: `${API_BASE}/analytics/query`,
-    SCHEMA: `${API_BASE}/analytics/schema`,
+  DATASET: {
+    FILES: `${API_BASE}/dataset/files`,
+    RELOAD: `${API_BASE}/dataset/files/reload`,
+    QUERY: `${API_BASE}/dataset/query`,
+    SCHEMA: `${API_BASE}/dataset/schema`,
   },
   SETTINGS: `${API_BASE}/settings`,
   HEALTH: `${API_BASE}/health`,

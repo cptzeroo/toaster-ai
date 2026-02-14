@@ -18,7 +18,7 @@ import {
   ApiBearerAuth,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { AnalyticsService } from './analytics.service';
+import { DatasetService } from './dataset.service';
 import { QueryDto } from './dto/query.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/auth.service';
@@ -26,13 +26,13 @@ import { JwtPayload } from '../auth/auth.service';
 // 20 GB max file size (in bytes)
 const MAX_FILE_SIZE = 20 * 1024 * 1024 * 1024;
 
-@ApiTags('Analytics')
+@ApiTags('Dataset')
 @ApiBearerAuth()
-@Controller('analytics')
-export class AnalyticsController {
-  private readonly logger = new Logger(AnalyticsController.name);
+@Controller('dataset')
+export class DatasetController {
+  private readonly logger = new Logger(DatasetController.name);
 
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly datasetService: DatasetService) {}
 
   // ─── Files ─────────────────────────────────────────────────
 
@@ -59,13 +59,13 @@ export class AnalyticsController {
     this.logger.log(
       `File upload: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)} MB) from ${user.username}`,
     );
-    return this.analyticsService.uploadFile(user.sub, file);
+    return this.datasetService.uploadFile(user.sub, file);
   }
 
   @Get('files')
   @ApiOperation({ summary: 'List all uploaded files for the current user' })
   getFiles(@CurrentUser() user: JwtPayload) {
-    return this.analyticsService.getFiles(user.sub);
+    return this.datasetService.getFiles(user.sub);
   }
 
   @Post('files/reload')
@@ -75,7 +75,7 @@ export class AnalyticsController {
   })
   async syncFiles(@CurrentUser() user: JwtPayload) {
     this.logger.log(`File sync requested by ${user.username}`);
-    return this.analyticsService.syncUserFiles(user.sub);
+    return this.datasetService.syncUserFiles(user.sub);
   }
 
   @Get('files/:id')
@@ -84,7 +84,7 @@ export class AnalyticsController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.analyticsService.getFile(id, user.sub);
+    return this.datasetService.getFile(id, user.sub);
   }
 
   @Delete('files/:id')
@@ -93,7 +93,7 @@ export class AnalyticsController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    await this.analyticsService.deleteFile(id, user.sub);
+    await this.datasetService.deleteFile(id, user.sub);
     return { deleted: true };
   }
 
@@ -108,7 +108,7 @@ export class AnalyticsController {
     this.logger.log(
       `Query from ${user.username}: ${dto.sql.substring(0, 100)}${dto.sql.length > 100 ? '...' : ''}`,
     );
-    return this.analyticsService.executeQuery(user.sub, dto.sql, dto.limit);
+    return this.datasetService.executeQuery(user.sub, dto.sql, dto.limit);
   }
 
   // ─── Schema ────────────────────────────────────────────────
@@ -118,7 +118,7 @@ export class AnalyticsController {
     summary: 'Get schema info for all loaded tables (for LLM context)',
   })
   async getSchema(@CurrentUser() user: JwtPayload) {
-    const schema = await this.analyticsService.getUserSchema(user.sub);
+    const schema = await this.datasetService.getUserSchema(user.sub);
     return { schema };
   }
 }

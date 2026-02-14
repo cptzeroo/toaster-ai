@@ -18,8 +18,8 @@ import { ERROR_MESSAGES } from '@/common/constants/error-messages';
 const ALLOWED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
 
 @Injectable()
-export class AnalyticsService implements OnModuleInit {
-  private readonly logger = new Logger(AnalyticsService.name);
+export class DatasetService implements OnModuleInit {
+  private readonly logger = new Logger(DatasetService.name);
   private readonly dataDir: string;
 
   constructor(
@@ -127,7 +127,7 @@ export class AnalyticsService implements OnModuleInit {
     // Validate file extension
     const ext = path.extname(file.originalname).toLowerCase();
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      throw new BadRequestException(ERROR_MESSAGES.ANALYTICS.UNSUPPORTED_FORMAT);
+      throw new BadRequestException(ERROR_MESSAGES.DATASET.UNSUPPORTED_FORMAT);
     }
 
     // Create user directory if it doesn't exist
@@ -204,7 +204,7 @@ export class AnalyticsService implements OnModuleInit {
         schema = await this.duckdb.loadExcel(file.filePath, file.tableName);
       } else {
         throw new BadRequestException(
-          ERROR_MESSAGES.ANALYTICS.UNSUPPORTED_FORMAT,
+          ERROR_MESSAGES.DATASET.UNSUPPORTED_FORMAT,
         );
       }
 
@@ -236,7 +236,7 @@ export class AnalyticsService implements OnModuleInit {
         (err as Error).stack,
       );
       throw new InternalServerErrorException(
-        ERROR_MESSAGES.ANALYTICS.QUERY_FAILED,
+        ERROR_MESSAGES.DATASET.QUERY_FAILED,
       );
     }
   }
@@ -366,7 +366,7 @@ export class AnalyticsService implements OnModuleInit {
   ): Promise<FileMetadataDocument> {
     const file = await this.fileRepo.findByIdAndUser(fileId, userId);
     if (!file) {
-      throw new NotFoundException(ERROR_MESSAGES.ANALYTICS.FILE_NOT_FOUND);
+      throw new NotFoundException(ERROR_MESSAGES.DATASET.FILE_NOT_FOUND);
     }
     return file;
   }
@@ -377,7 +377,7 @@ export class AnalyticsService implements OnModuleInit {
   async deleteFile(fileId: string, userId: string): Promise<void> {
     const file = await this.fileRepo.findByIdAndUser(fileId, userId);
     if (!file) {
-      throw new NotFoundException(ERROR_MESSAGES.ANALYTICS.FILE_NOT_FOUND);
+      throw new NotFoundException(ERROR_MESSAGES.DATASET.FILE_NOT_FOUND);
     }
 
     // Remove from DuckDB

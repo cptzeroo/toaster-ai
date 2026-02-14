@@ -25,7 +25,7 @@ export interface QueryResult {
 
 type ApiClient = ReturnType<typeof createApiClient>;
 
-export function createAnalyticsService(api: ApiClient) {
+export function createDatasetService(api: ApiClient) {
   return {
     /**
      * Upload a CSV or Excel file for analysis.
@@ -35,7 +35,7 @@ export function createAnalyticsService(api: ApiClient) {
       formData.append('file', file);
 
       const { data, ok } = await api.upload<FileMetadata>(
-        API_ENDPOINTS.ANALYTICS.FILES,
+        API_ENDPOINTS.DATASET.FILES,
         formData,
       );
       return ok && data ? data : null;
@@ -46,7 +46,7 @@ export function createAnalyticsService(api: ApiClient) {
      */
     async getFiles(): Promise<FileMetadata[]> {
       const { data, ok } = await api.get<FileMetadata[]>(
-        API_ENDPOINTS.ANALYTICS.FILES,
+        API_ENDPOINTS.DATASET.FILES,
       );
       return ok && data ? data : [];
     },
@@ -56,7 +56,7 @@ export function createAnalyticsService(api: ApiClient) {
      */
     async getFile(fileId: string): Promise<FileMetadata | null> {
       const { data, ok } = await api.get<FileMetadata>(
-        `${API_ENDPOINTS.ANALYTICS.FILES}/${fileId}`,
+        `${API_ENDPOINTS.DATASET.FILES}/${fileId}`,
       );
       return ok && data ? data : null;
     },
@@ -67,7 +67,7 @@ export function createAnalyticsService(api: ApiClient) {
      */
     async reloadFiles(): Promise<FileMetadata[]> {
       const { data, ok } = await api.post<FileMetadata[]>(
-        API_ENDPOINTS.ANALYTICS.RELOAD,
+        API_ENDPOINTS.DATASET.RELOAD,
       );
       return ok && data ? data : [];
     },
@@ -77,7 +77,7 @@ export function createAnalyticsService(api: ApiClient) {
      */
     async deleteFile(fileId: string): Promise<boolean> {
       const { ok } = await api.delete(
-        `${API_ENDPOINTS.ANALYTICS.FILES}/${fileId}`,
+        `${API_ENDPOINTS.DATASET.FILES}/${fileId}`,
       );
       return ok;
     },
@@ -90,7 +90,7 @@ export function createAnalyticsService(api: ApiClient) {
       limit?: number,
     ): Promise<QueryResult | null> {
       const { data, ok } = await api.post<QueryResult>(
-        API_ENDPOINTS.ANALYTICS.QUERY,
+        API_ENDPOINTS.DATASET.QUERY,
         { sql, limit },
       );
       return ok && data ? data : null;
@@ -101,7 +101,7 @@ export function createAnalyticsService(api: ApiClient) {
      */
     async getSchema(): Promise<string> {
       const { data, ok } = await api.get<{ schema: string }>(
-        API_ENDPOINTS.ANALYTICS.SCHEMA,
+        API_ENDPOINTS.DATASET.SCHEMA,
       );
       return ok && data ? data.schema : '';
     },

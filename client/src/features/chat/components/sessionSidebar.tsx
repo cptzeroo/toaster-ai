@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react"
 import type { ChatSessionSummary } from "@/features/chat/services/chatSessionService"
-import { FileUploadPanel } from "@/features/analytics/components/fileUploadPanel"
+import { FileUploadPanel } from "@/features/dataset/components/fileUploadPanel"
 
 interface SessionSidebarProps {
   sessions: ChatSessionSummary[]

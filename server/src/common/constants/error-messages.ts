@@ -12,13 +12,13 @@ export const ERROR_MESSAGES = {
     NOT_FOUND: 'Chat session not found or has expired',
     ACCESS_DENIED: 'You do not have access to this session',
   },
-  ANALYTICS: {
+  DATASET: {
     FILE_NOT_FOUND: 'File not found or has been removed',
     FILE_TOO_LARGE: 'File exceeds the maximum allowed size',
     UNSUPPORTED_FORMAT: 'Unsupported file format. Accepted: CSV, Excel (.xlsx, .xls)',
     QUERY_FAILED: 'Failed to execute query on the data',
     NO_FILES: 'No files uploaded yet. Upload a CSV or Excel file first.',
-    DUCKDB_INIT_FAILED: 'Failed to initialize analytics engine',
+    DUCKDB_INIT_FAILED: 'Failed to initialize dataset engine',
     UPLOAD_FAILED: 'Failed to upload file',
     DELETE_FAILED: 'Failed to delete file',
   },

@@ -18,7 +18,7 @@ import {
   getModelById,
   type AIProvider,
 } from './chat.models';
-import { AnalyticsService } from '../analytics/analytics.service';
+import { DatasetService } from '../dataset/dataset.service';
 
 const BASE_SYSTEM_PROMPT =
   'You are Toaster AI, an assistant specialized in accounting and financial data analysis. ' +
@@ -55,7 +55,7 @@ export class ChatService {
 
   constructor(
     private configService: ConfigService,
-    private analyticsService: AnalyticsService,
+    private datasetService: DatasetService,
   ) {
     this.google = createGoogleGenerativeAI({
       apiKey: this.configService.get<string>('GOOGLE_GENERATIVE_AI_API_KEY'),
@@ -116,7 +116,7 @@ export class ChatService {
    */
   private async buildSystemPrompt(userId: string): Promise<string> {
     try {
-      const schema = await this.analyticsService.getUserSchema(userId);
+      const schema = await this.datasetService.getUserSchema(userId);
 
       this.logger.log(`duck db schema: ${schema}`);
 
@@ -192,7 +192,7 @@ export class ChatService {
               `Tool call queryData from user ${userId}: ${sql}`,
             );
             try {
-              const result = await this.analyticsService.executeQuery(
+              const result = await this.datasetService.executeQuery(
                 userId,
                 sql,
                 100,

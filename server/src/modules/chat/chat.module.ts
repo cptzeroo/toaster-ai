@@ -8,14 +8,14 @@ import {
   ChatSession,
   ChatSessionSchema,
 } from './schemas/chat-session.schema';
-import { AnalyticsModule } from '../analytics/analytics.module';
+import { DatasetModule } from '../dataset/dataset.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: ChatSession.name, schema: ChatSessionSchema },
     ]),
-    AnalyticsModule,
+    DatasetModule,
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatSessionRepository, ChatSessionService],
