@@ -40,35 +40,62 @@ export class AnalyticsService implements OnModuleInit {
 
   private async reloadAllFiles(): Promise<void> {
     const allFiles = await this.fileRepo.findAll();
+
+    // Phase 1: Clean up orphans and reload existing records
     const loadedFiles = allFiles.filter((f) => f.isLoaded);
 
-    if (loadedFiles.length === 0) {
-      this.logger.log('No files to reload into DuckDB');
+    if (loadedFiles.length > 0) {
+      this.logger.log(
+        `Reloading ${loadedFiles.length} file(s) into DuckDB...`,
+      );
+
+      for (const file of loadedFiles) {
+        const exists = await this.fileExistsOnDisk(file.filePath);
+        if (!exists) {
+          await this.cleanupOrphan(file);
+          continue;
+        }
+
+        try {
+          await this.loadFileIntoDuckDB(file);
+        } catch (err) {
+          this.logger.warn(
+            `Skipping reload of "${file.originalName}": ${(err as Error).message}`,
+          );
+        }
+      }
+    }
+
+    // Phase 2: Discover unregistered files on disk across all user directories
+    await this.discoverAllFilesOnDisk();
+
+    this.logger.log('DuckDB reload complete');
+  }
+
+  /**
+   * Scan all user directories under DATA_DIR to discover
+   * files that exist on disk but have no MongoDB record.
+   */
+  private async discoverAllFilesOnDisk(): Promise<void> {
+    let userDirs: string[];
+    try {
+      userDirs = await fs.readdir(this.dataDir);
+    } catch {
+      // DATA_DIR doesn't exist yet -- nothing to discover
       return;
     }
 
-    this.logger.log(
-      `Reloading ${loadedFiles.length} file(s) into DuckDB...`,
-    );
+    for (const dirName of userDirs) {
+      // Skip hidden files/folders and non-directory entries
+      if (dirName.startsWith('.')) continue;
 
-    for (const file of loadedFiles) {
-      const exists = await this.fileExistsOnDisk(file.filePath);
-      if (!exists) {
-        // File missing from disk -- clean up orphaned metadata and DuckDB table
-        await this.cleanupOrphan(file);
-        continue;
-      }
+      const dirPath = path.join(this.dataDir, dirName);
+      const stat = await fs.stat(dirPath);
+      if (!stat.isDirectory()) continue;
 
-      try {
-        await this.loadFileIntoDuckDB(file);
-      } catch (err) {
-        this.logger.warn(
-          `Skipping reload of "${file.originalName}": ${(err as Error).message}`,
-        );
-      }
+      // dirName is the userId
+      await this.discoverFilesOnDisk(dirName);
     }
-
-    this.logger.log('DuckDB reload complete');
   }
 
   /**
@@ -222,24 +249,25 @@ export class AnalyticsService implements OnModuleInit {
   }
 
   /**
-   * Sync a user's files: remove orphaned records (disk file deleted)
-   * and reload any files that aren't yet loaded into DuckDB.
+   * Sync a user's files:
+   *  1. Remove orphaned MongoDB records (disk file deleted)
+   *  2. Reload files that aren't yet loaded into DuckDB
+   *  3. Discover files on disk that have no MongoDB record and register them
    * Returns the updated file list.
    */
   async syncUserFiles(userId: string): Promise<FileMetadataDocument[]> {
     const files = await this.fileRepo.findByUser(userId);
 
+    // Phase 1: Clean up orphaned records and reload unloaded files
     for (const file of files) {
       const fileExists = await this.fileExistsOnDisk(file.filePath);
 
       if (!fileExists) {
-        // Disk file was removed -- clean up orphaned record
         await this.cleanupOrphan(file);
         continue;
       }
 
       if (!file.isLoaded) {
-        // File exists on disk but not loaded in DuckDB -- reload it
         try {
           await this.loadFileIntoDuckDB(file);
         } catch (err) {
@@ -250,8 +278,74 @@ export class AnalyticsService implements OnModuleInit {
       }
     }
 
-    // Return the fresh list after cleanup
+    // Phase 2: Discover files on disk that have no MongoDB record
+    await this.discoverFilesOnDisk(userId);
+
+    // Return the fresh list after sync
     return this.fileRepo.findByUser(userId);
+  }
+
+  /**
+   * Scan the user's data directory for files that exist on disk
+   * but have no matching MongoDB record, and register + load them.
+   */
+  private async discoverFilesOnDisk(userId: string): Promise<void> {
+    const userDir = path.join(this.dataDir, userId);
+
+    let entries: string[];
+    try {
+      entries = await fs.readdir(userDir);
+    } catch {
+      // Directory doesn't exist yet -- nothing to discover
+      return;
+    }
+
+    for (const fileName of entries) {
+      // Skip hidden files (.DS_Store, etc.)
+      if (fileName.startsWith('.')) continue;
+
+      const ext = path.extname(fileName).toLowerCase();
+      if (!ALLOWED_EXTENSIONS.includes(ext)) continue;
+
+      // Check if we already have a record for this stored name
+      const existing = await this.fileRepo.findByStoredNameAndUser(
+        fileName,
+        userId,
+      );
+      if (existing) continue;
+
+      // Unregistered file -- create metadata and load into DuckDB
+      const filePath = path.resolve(path.join(userDir, fileName));
+      const originalName = this.extractOriginalName(fileName);
+      const tableName = this.generateTableName(originalName, userId);
+      const stat = await fs.stat(filePath);
+      const mimeType = this.getMimeType(ext);
+
+      this.logger.log(
+        `Discovered unregistered file: "${originalName}" (${fileName}) for user ${userId}`,
+      );
+
+      const metadata = await this.fileRepo.create({
+        userId: new Types.ObjectId(userId),
+        originalName,
+        storedName: fileName,
+        mimeType,
+        sizeBytes: stat.size,
+        filePath,
+        tableName,
+        isLoaded: false,
+        columns: [],
+        rowCount: 0,
+      });
+
+      try {
+        await this.loadFileIntoDuckDB(metadata);
+      } catch (err) {
+        this.logger.warn(
+          `Failed to load discovered file "${originalName}": ${(err as Error).message}`,
+        );
+      }
+    }
   }
 
   private async fileExistsOnDisk(filePath: string): Promise<boolean> {
@@ -378,6 +472,33 @@ export class AnalyticsService implements OnModuleInit {
     // Add user-specific short prefix to avoid collisions between users
     const userPrefix = userId.slice(-6);
     return `u${userPrefix}_${base}`;
+  }
+
+  /**
+   * Extract the original filename from a stored name.
+   * Stored names follow the pattern: `{timestamp}_{sanitized_name}`.
+   * For manually placed files without a timestamp prefix, return as-is.
+   */
+  private extractOriginalName(storedName: string): string {
+    // Match leading timestamp prefix: digits followed by underscore
+    const match = storedName.match(/^\d+_(.+)$/);
+    if (match) {
+      return match[1];
+    }
+    return storedName;
+  }
+
+  private getMimeType(ext: string): string {
+    switch (ext) {
+      case '.csv':
+        return 'text/csv';
+      case '.xlsx':
+        return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      case '.xls':
+        return 'application/vnd.ms-excel';
+      default:
+        return 'application/octet-stream';
+    }
   }
 
   private addLimitIfMissing(sql: string, limit: number): string {

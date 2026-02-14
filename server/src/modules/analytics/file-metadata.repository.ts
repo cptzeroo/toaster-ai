@@ -80,6 +80,18 @@ export class FileMetadataRepository {
     return result.deletedCount > 0;
   }
 
+  async findByStoredNameAndUser(
+    storedName: string,
+    userId: string,
+  ): Promise<FileMetadataDocument | null> {
+    return this.fileModel
+      .findOne({
+        storedName,
+        userId: new Types.ObjectId(userId),
+      })
+      .exec();
+  }
+
   /** Delete by ID without userId check (internal cleanup only). */
   async deleteById(fileId: string): Promise<boolean> {
     const result = await this.fileModel.deleteOne({ _id: fileId }).exec();
