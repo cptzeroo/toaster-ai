@@ -7,6 +7,7 @@ import {
   Table,
   ChevronDown,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react"
 import { toast } from "sonner"
 import { useAuth } from "@/features/auth/context/AuthContext"
@@ -34,6 +35,7 @@ export function FileUploadPanel() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<FileMetadata[]>([])
   const [uploading, setUploading] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [expandedFile, setExpandedFile] = useState<string | null>(null)
 
@@ -90,26 +92,53 @@ export function FileUploadPanel() {
     [analyticsService, loadFiles],
   )
 
+  const handleSync = useCallback(async () => {
+    setSyncing(true)
+    try {
+      const updated = await analyticsService.reloadFiles()
+      setFiles(updated)
+      toast.success("Files synced")
+    } catch {
+      toast.error("Failed to sync files")
+    } finally {
+      setSyncing(false)
+    }
+  }, [analyticsService])
+
   return (
     <div className="border-t border-border">
       {/* Toggle header */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {expanded ? (
-          <ChevronDown className="size-3.5" />
-        ) : (
-          <ChevronRight className="size-3.5" />
+      <div className="flex items-center">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex flex-1 items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {expanded ? (
+            <ChevronDown className="size-3.5" />
+          ) : (
+            <ChevronRight className="size-3.5" />
+          )}
+          <Table className="size-3.5" />
+          Data Files
+          {files.length > 0 && (
+            <span className="ml-auto rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+              {files.length}
+            </span>
+          )}
+        </button>
+        {expanded && (
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="shrink-0 mr-3 p-1 rounded text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            title="Sync files"
+          >
+            <RefreshCw
+              className={`size-3.5 ${syncing ? "animate-spin" : ""}`}
+            />
+          </button>
         )}
-        <Table className="size-3.5" />
-        Data Files
-        {files.length > 0 && (
-          <span className="ml-auto rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-            {files.length}
-          </span>
-        )}
-      </button>
+      </div>
 
       {expanded && (
         <div className="px-3 pb-3 space-y-2">

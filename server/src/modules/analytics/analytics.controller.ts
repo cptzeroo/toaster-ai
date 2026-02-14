@@ -68,6 +68,16 @@ export class AnalyticsController {
     return this.analyticsService.getFiles(user.sub);
   }
 
+  @Post('files/reload')
+  @ApiOperation({
+    summary:
+      'Sync files: remove orphaned records and reload unloaded files into DuckDB',
+  })
+  async syncFiles(@CurrentUser() user: JwtPayload) {
+    this.logger.log(`File sync requested by ${user.username}`);
+    return this.analyticsService.syncUserFiles(user.sub);
+  }
+
   @Get('files/:id')
   @ApiOperation({ summary: 'Get metadata for a specific file' })
   getFile(

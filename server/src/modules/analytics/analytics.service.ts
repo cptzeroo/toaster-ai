@@ -52,9 +52,14 @@ export class AnalyticsService implements OnModuleInit {
     );
 
     for (const file of loadedFiles) {
+      const exists = await this.fileExistsOnDisk(file.filePath);
+      if (!exists) {
+        // File missing from disk -- clean up orphaned metadata and DuckDB table
+        await this.cleanupOrphan(file);
+        continue;
+      }
+
       try {
-        // Check if the file still exists on disk
-        await fs.access(file.filePath);
         await this.loadFileIntoDuckDB(file);
       } catch (err) {
         this.logger.warn(
@@ -64,6 +69,22 @@ export class AnalyticsService implements OnModuleInit {
     }
 
     this.logger.log('DuckDB reload complete');
+  }
+
+  /**
+   * Remove orphaned metadata and DuckDB table for a file
+   * whose underlying disk file no longer exists.
+   */
+  private async cleanupOrphan(file: FileMetadataDocument): Promise<void> {
+    this.logger.warn(
+      `Cleaning up orphan: "${file.originalName}" (file missing from disk)`,
+    );
+    try {
+      await this.duckdb.dropTable(file.tableName);
+    } catch {
+      // Table may not exist; safe to ignore
+    }
+    await this.fileRepo.deleteById((file as any)._id.toString());
   }
 
   // ─── File Management ───────────────────────────────────────
@@ -198,6 +219,48 @@ export class AnalyticsService implements OnModuleInit {
    */
   async getFiles(userId: string): Promise<FileMetadataDocument[]> {
     return this.fileRepo.findByUser(userId);
+  }
+
+  /**
+   * Sync a user's files: remove orphaned records (disk file deleted)
+   * and reload any files that aren't yet loaded into DuckDB.
+   * Returns the updated file list.
+   */
+  async syncUserFiles(userId: string): Promise<FileMetadataDocument[]> {
+    const files = await this.fileRepo.findByUser(userId);
+
+    for (const file of files) {
+      const fileExists = await this.fileExistsOnDisk(file.filePath);
+
+      if (!fileExists) {
+        // Disk file was removed -- clean up orphaned record
+        await this.cleanupOrphan(file);
+        continue;
+      }
+
+      if (!file.isLoaded) {
+        // File exists on disk but not loaded in DuckDB -- reload it
+        try {
+          await this.loadFileIntoDuckDB(file);
+        } catch (err) {
+          this.logger.warn(
+            `Failed to reload "${file.originalName}" during sync: ${(err as Error).message}`,
+          );
+        }
+      }
+    }
+
+    // Return the fresh list after cleanup
+    return this.fileRepo.findByUser(userId);
+  }
+
+  private async fileExistsOnDisk(filePath: string): Promise<boolean> {
+    try {
+      await fs.access(filePath);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**

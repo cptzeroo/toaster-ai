@@ -62,6 +62,17 @@ export function createAnalyticsService(api: ApiClient) {
     },
 
     /**
+     * Sync files: remove orphaned records and reload unloaded files.
+     * Returns the updated file list.
+     */
+    async reloadFiles(): Promise<FileMetadata[]> {
+      const { data, ok } = await api.post<FileMetadata[]>(
+        API_ENDPOINTS.ANALYTICS.RELOAD,
+      );
+      return ok && data ? data : [];
+    },
+
+    /**
      * Delete an uploaded file.
      */
     async deleteFile(fileId: string): Promise<boolean> {

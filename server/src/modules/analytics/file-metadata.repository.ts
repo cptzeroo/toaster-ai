@@ -79,4 +79,10 @@ export class FileMetadataRepository {
       .exec();
     return result.deletedCount > 0;
   }
+
+  /** Delete by ID without userId check (internal cleanup only). */
+  async deleteById(fileId: string): Promise<boolean> {
+    const result = await this.fileModel.deleteOne({ _id: fileId }).exec();
+    return result.deletedCount > 0;
+  }
 }

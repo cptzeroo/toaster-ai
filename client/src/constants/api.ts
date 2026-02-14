@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   },
   ANALYTICS: {
     FILES: `${API_BASE}/analytics/files`,
+    RELOAD: `${API_BASE}/analytics/files/reload`,
     QUERY: `${API_BASE}/analytics/query`,
     SCHEMA: `${API_BASE}/analytics/schema`,
   },
