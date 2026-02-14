@@ -168,18 +168,32 @@ export class DuckDBRepository implements OnModuleInit, OnModuleDestroy {
   /**
    * Convert BigInt values to Numbers (or strings if too large) so
    * JSON.stringify doesn't throw "Do not know how to serialize a BigInt".
+   * Also converts Date objects to ISO strings for safe serialization.
    */
   private toJsonSafe(rows: any[][]): any[][] {
-    return rows.map((row) =>
-      row.map((val) => {
-        if (typeof val === 'bigint') {
-          // Safe integer range: -(2^53-1) to 2^53-1
-          return val >= -9007199254740991n && val <= 9007199254740991n
-            ? Number(val)
-            : val.toString();
-        }
-        return val;
-      }),
-    );
+    return rows.map((row) => row.map((val) => this.toJsonSafeValue(val)));
+  }
+
+  private toJsonSafeValue(val: unknown): unknown {
+    if (val === null || val === undefined) return val;
+    if (typeof val === 'bigint') {
+      return val >= -9007199254740991n && val <= 9007199254740991n
+        ? Number(val)
+        : val.toString();
+    }
+    if (val instanceof Date) {
+      return val.toISOString();
+    }
+    if (Array.isArray(val)) {
+      return val.map((v) => this.toJsonSafeValue(v));
+    }
+    if (typeof val === 'object') {
+      const result: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+        result[k] = this.toJsonSafeValue(v);
+      }
+      return result;
+    }
+    return val;
   }
 }
