@@ -329,7 +329,7 @@ function EmptyState({
           <img src="/assets/icons/toaster.png" alt="Toaster AI" className="size-16" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold">Toaster AI</h3>
+          <h3 className="text-lg font-semibold">Toaster - Let him cook.</h3>
           <p className="text-sm text-muted-foreground mt-1">
             Ask me anything. I can help you query data, search the web, manage
             emails, and more.

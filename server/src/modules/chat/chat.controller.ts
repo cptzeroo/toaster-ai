@@ -132,6 +132,7 @@ export class ChatController {
     try {
       const result = await this.chatService.chat(
         chatDto.messages,
+        user.sub,
         chatDto.model,
       );
 

@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react"
 import type { ChatSessionSummary } from "@/features/chat/services/chatSessionService"
+import { FileUploadPanel } from "@/features/analytics/components/fileUploadPanel"
 
 interface SessionSidebarProps {
   sessions: ChatSessionSummary[]
@@ -182,6 +183,9 @@ export function SessionSidebar({
           ))
         )}
       </div>
+
+      {/* Data files panel */}
+      <FileUploadPanel />
 
       {/* TTL notice */}
       <div className="border-t px-3 py-2">

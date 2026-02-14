@@ -69,8 +69,8 @@ export function createApiClient(getToken: () => string | null) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // Auto-attach content-type for requests with body
-    if (options?.body && !headers['Content-Type']) {
+    // Auto-attach content-type for requests with body (skip for FormData)
+    if (options?.body && !headers['Content-Type'] && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
 
@@ -108,5 +108,16 @@ export function createApiClient(getToken: () => string | null) {
 
     delete: <T = unknown>(url: string) =>
       request<T>(url, { method: 'DELETE' }),
+
+    /**
+     * Upload a file using FormData (no JSON Content-Type).
+     * The browser sets the multipart boundary automatically.
+     */
+    upload: <T = unknown>(url: string, formData: FormData) =>
+      request<T>(url, {
+        method: 'POST',
+        body: formData,
+        headers: {}, // Empty so auto Content-Type JSON isn't added
+      }),
   };
 }

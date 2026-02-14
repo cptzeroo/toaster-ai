@@ -13,6 +13,11 @@ export const API_ENDPOINTS = {
     SESSIONS: `${API_BASE}/chat/sessions`,
     SESSION_TTL: `${API_BASE}/chat/sessions/ttl`,
   },
+  ANALYTICS: {
+    FILES: `${API_BASE}/analytics/files`,
+    QUERY: `${API_BASE}/analytics/query`,
+    SCHEMA: `${API_BASE}/analytics/schema`,
+  },
   SETTINGS: `${API_BASE}/settings`,
   HEALTH: `${API_BASE}/health`,
 } as const;
