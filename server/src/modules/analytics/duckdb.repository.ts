@@ -60,9 +60,11 @@ export class DuckDBRepository implements OnModuleInit, OnModuleDestroy {
       // Drop existing table if it exists (for re-uploads)
       await connection.run(`DROP TABLE IF EXISTS "${tableName}"`);
 
-      // Create table from CSV with auto-detection
+      // Create table from CSV with auto-detection and explicit quote handling
+      // Explicit quote='"' ensures fields like "val1,val2" are parsed correctly
+      // even when auto-detection fails to identify the quote character.
       await connection.run(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv('${this.escapePath(filePath)}', auto_detect=true)`,
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv('${this.escapePath(filePath)}', auto_detect=true, quote='"')`,
       );
 
       // Get schema info
