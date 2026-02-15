@@ -45,6 +45,8 @@ Toaster turns complex accounting inquiries into instant, data-backed answers. Up
   
 ```mermaid
 flowchart TD
+%% Shrink the default font size and padding for all nodes
+classDef default font-size:13px,padding:5px,line-height:1.2;
 
 A["User Query"] --> B["Session & Auth<br/>(JWT)"]
 B --> C["Build System Prompt<br/>(inject data schema)"]
