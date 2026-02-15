@@ -17,10 +17,10 @@ import {
 } from "@/features/chat/services/chatSessionService"
 
 const SUGGESTIONS = [
-  "What can you help me with?",
-  "Explain how React hooks work",
-  "Write a TypeScript utility function",
-  "Summarize the latest trends in AI",
+  "Show key metrics from my data",
+  "What can you help me analyze?",
+  "Describe my dataset",
+  "What insights can you find in my data?",
 ]
 
 export function ChatPage() {
