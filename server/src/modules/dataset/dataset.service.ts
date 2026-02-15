@@ -14,9 +14,12 @@ import { DuckDBRepository, QueryResult } from './duckdb.repository';
 import { FileMetadataRepository } from './file-metadata.repository';
 import { FileMetadataDocument } from './schemas/file-metadata.schema';
 import { UserService } from '../user/user.service';
+import { RedisService } from '../redis/redis.service';
 import { ERROR_MESSAGES } from '@/common/constants/error-messages';
+import * as crypto from 'crypto';
 
 const ALLOWED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
+const CACHE_TTL = 3600; // 1 hour
 
 @Injectable()
 export class DatasetService implements OnModuleInit {
@@ -28,8 +31,30 @@ export class DatasetService implements OnModuleInit {
     private readonly fileRepo: FileMetadataRepository,
     private readonly configService: ConfigService,
     private readonly userService: UserService,
+    private readonly redis: RedisService,
   ) {
     this.dataDir = this.configService.get<string>('DATA_DIR', './data');
+  }
+
+  // ─── Cache Keys ─────────────────────────────────────────────
+
+  private schemaKey(userId: string): string {
+    return `toaster:schema:${userId}`;
+  }
+
+  private queryKey(userId: string, sql: string): string {
+    const hash = crypto.createHash('sha256').update(sql).digest('hex').slice(0, 16);
+    return `toaster:query:${userId}:${hash}`;
+  }
+
+  private queryPattern(userId: string): string {
+    return `toaster:query:${userId}:*`;
+  }
+
+  /** Invalidate all cached schema + query results for a user. */
+  private async invalidateUserCache(userId: string): Promise<void> {
+    await this.redis.del(this.schemaKey(userId));
+    await this.redis.delByPattern(this.queryPattern(userId));
   }
 
   /**
@@ -201,6 +226,9 @@ export class DatasetService implements OnModuleInit {
       throw err;
     }
 
+    // Invalidate cached schema + queries -- data has changed
+    await this.invalidateUserCache(userId);
+
     return metadata;
   }
 
@@ -297,6 +325,9 @@ export class DatasetService implements OnModuleInit {
     // Phase 2: Discover files on disk that have no MongoDB record
     const userDataDir = await this.userService.getDataDir(userId);
     await this.discoverFilesOnDisk(userId, userDataDir);
+
+    // Invalidate cached schema + queries -- data may have changed
+    await this.invalidateUserCache(userId);
 
     // Return the fresh list after sync
     return this.fileRepo.findByUser(userId);
@@ -417,6 +448,9 @@ export class DatasetService implements OnModuleInit {
     // Remove from MongoDB
     await this.fileRepo.delete(fileId, userId);
 
+    // Invalidate cached schema + queries -- data has changed
+    await this.invalidateUserCache(userId);
+
     this.logger.log(
       `Deleted file "${file.originalName}" for user ${userId}`,
     );
@@ -439,8 +473,18 @@ export class DatasetService implements OnModuleInit {
     const cappedLimit = Math.min(limit, this.MAX_QUERY_ROWS);
     const safeSql = this.addLimitIfMissing(sql, cappedLimit);
 
+    // Check cache first
+    const cacheKey = this.queryKey(userId, safeSql);
+    const cached = await this.redis.get<QueryResult>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for query: ${cacheKey}`);
+      return cached;
+    }
+
     try {
-      return await this.duckdb.query(safeSql);
+      const result = await this.duckdb.query(safeSql);
+      await this.redis.set(cacheKey, result, CACHE_TTL);
+      return result;
     } catch (err) {
       this.logger.error(
         `Query failed for user ${userId}: ${(err as Error).message}`,
@@ -456,6 +500,14 @@ export class DatasetService implements OnModuleInit {
    * This is used to provide context to the LLM.
    */
   async getUserSchema(userId: string): Promise<string> {
+    // Check cache first
+    const cacheKey = this.schemaKey(userId);
+    const cached = await this.redis.get<string>(cacheKey);
+    if (cached) {
+      this.logger.debug(`Cache hit for schema: ${cacheKey}`);
+      return cached;
+    }
+
     const files = await this.fileRepo.findByUser(userId);
     const loadedFiles = files.filter((f) => f.isLoaded);
 
@@ -480,7 +532,9 @@ export class DatasetService implements OnModuleInit {
       }
     }
 
-    return schemas.join('\n\n');
+    const result = schemas.join('\n\n');
+    await this.redis.set(cacheKey, result, CACHE_TTL);
+    return result;
   }
 
   // ─── Helpers ───────────────────────────────────────────────

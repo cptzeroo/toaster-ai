@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { DatasetModule } from './modules/dataset/dataset.module';
+import { RedisModule } from './modules/redis/redis.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { DatasetModule } from './modules/dataset/dataset.module';
       }),
       inject: [ConfigService],
     }),
+    RedisModule,
     AuthModule,
     UserModule,
     ChatModule,
