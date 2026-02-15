@@ -69,7 +69,7 @@ B --> C["Build System Prompt<br/>(inject data schema)"]
 C --> D["AI Model<br/>(Gemini / OpenAI / Anthropic)"]
 D --> E{"Tool Call?"}
 
-E -- "No" --> F["Stream Text\nResponse"]
+E -- "No" --> F["Stream Text<br/>Response"]
 E -- "Yes: queryData" --> G["Generate SQL"]
 G --> H["DuckDB<br/>(in-memory)"]
 H --> I["Return Query<br/>Results"]
