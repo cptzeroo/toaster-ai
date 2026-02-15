@@ -1,5 +1,21 @@
 
-# Toaster 
+# Toaster AI
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://github.com/user-attachments/assets/868f4ce0-3eed-4d5f-afa0-c8352fa32c16">
+    <img 
+      src="https://github.com/user-attachments/assets/868f4ce0-3eed-4d5f-afa0-c8352fa32c16" 
+      alt="Toaster AI Logo" 
+      width="226" 
+      height="198"
+    >
+  </picture>
+</p>
+
+<p align="center">
+  <strong> Let him cook.</strong>
+</p>
 
 Toaster is a suite of AI tools built specifically for accountants. Upload financial spreadsheets or CSV files, ask questions in natural language, and Toaster will query your data using DuckDB to deliver real-time AI-powered results. Imagine Claud, but built specifically for accounting.
 
