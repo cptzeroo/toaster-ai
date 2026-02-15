@@ -20,6 +20,23 @@ export class FileMetadataRepository {
     return doc.save();
   }
 
+  /**
+   * Find-or-create by (userId, storedName). Returns the existing doc if it
+   * already exists, or creates a new one. This avoids duplicate-key errors
+   * when upload and sync race on the same file.
+   */
+  async upsertByStoredName(
+    data: Partial<FileMetadata> & { userId: Types.ObjectId; storedName: string },
+  ): Promise<FileMetadataDocument> {
+    return this.fileModel
+      .findOneAndUpdate(
+        { userId: data.userId, storedName: data.storedName },
+        { $setOnInsert: data },
+        { upsert: true, new: true },
+      )
+      .exec() as Promise<FileMetadataDocument>;
+  }
+
   /** Get all files across all users (used for DuckDB reload on startup). */
   async findAll(): Promise<FileMetadataDocument[]> {
     return this.fileModel.find().exec();

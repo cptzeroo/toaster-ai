@@ -20,6 +20,10 @@ export class User {
   @Prop({ type: Date, default: Date.now })
   tokenValidFrom: Date;
 
+  /** Random directory name used for storing user's data files on disk (generated once) */
+  @Prop({ unique: true, sparse: true })
+  dataDir: string;
+
   /** Super admin has access to all features and admin endpoints */
   @Prop({ default: false })
   isSuperAdmin: boolean;

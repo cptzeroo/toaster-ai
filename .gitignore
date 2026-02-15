@@ -27,6 +27,7 @@ lerna-debug.log*
 .idea/
 .vscode/
 .cursor/
+.agents/
 *.swp
 *.swo
 *~

@@ -27,7 +27,7 @@ export const AI_MODELS: AIModel[] = [
   // { id: 'claude-3.5-haiku', name: 'Claude 3.5 Haiku', provider: 'anthropic' },
 ];
 
-export const DEFAULT_MODEL_ID = 'gemini-2.0-flash';
+export const DEFAULT_MODEL_ID = 'gemini-3-pro';
 
 export function getModelsByProvider(provider: AIProvider): AIModel[] {
   return AI_MODELS.filter((m) => m.provider === provider);

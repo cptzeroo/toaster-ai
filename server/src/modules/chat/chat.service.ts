@@ -27,13 +27,18 @@ const BASE_SYSTEM_PROMPT =
   'Always explain your findings clearly. Format numbers as currency when appropriate. ' +
   'Use markdown tables for tabular results. Be concise and accurate.\n\n' +
   'IMPORTANT SQL tips for DuckDB:\n' +
-  '- VARCHAR columns that contain currency values (e.g. "$50,000") must be cast to numeric before math. ' +
-  'Use: REPLACE(REPLACE(column_name, \'$\', \'\'), \',\', \'\')::DOUBLE to clean and cast them.\n' +
-  '- You CAN perform calculations across columns in the same row (e.g. total_debt / yearly_income for DTI).\n' +
-  '- Use MEDIAN() for median, AVG() for mean, MIN(), MAX(), ROUND() for formatting.\n' +
+  '- ALL CSV columns are loaded as VARCHAR. You MUST cast columns to the correct type before math/aggregation.\n' +
+  '  Example: column_name::INTEGER, column_name::DOUBLE, column_name::DATE, column_name::TIMESTAMP.\n' +
+  '- VARCHAR columns that contain currency values (e.g. "$50,000") must be cleaned and cast: ' +
+  'REPLACE(REPLACE(column_name, \'$\', \'\'), \',\', \'\')::DOUBLE.\n' +
+  '- You CAN perform calculations across columns in the same row (e.g. total_debt::DOUBLE / yearly_income::DOUBLE for DTI).\n' +
+  '- Use MEDIAN(), AVG(), MIN(), MAX(), ROUND() for formatting. TRY_CAST() is safer than CAST() for dirty data.\n' +
   '- Always handle potential division by zero with NULLIF().\n' +
   '- For percentages, multiply by 100 and round to 2 decimal places.\n' +
-  '- You can use multiple queryData tool calls if a single query is too complex. Break it down.';
+  '- You can use multiple queryData tool calls if a single query is too complex. Break it down.\n' +
+  '- QUERY ROW LIMIT: The system enforces a hard cap of 10 rows per query. Never request more than 10 rows.\n' +
+  '- For large datasets, always use aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY) instead of selecting raw rows.\n' +
+  '- If the user asks to "show all data", explain that you can show a sample of up to 10 rows and offer aggregated summaries instead.';
 
 const NO_DATA_PROMPT =
   'You are Toaster AI, a helpful assistant. ' +
@@ -176,7 +181,7 @@ export class ChatService {
           description:
             'Execute a SQL query against the user\'s uploaded accounting data. ' +
             'Use DuckDB SQL syntax. Always reference the exact table names from the schema context. ' +
-            'For large tables, use LIMIT to avoid returning too many rows.',
+            'Results are capped at 10 rows. Use aggregations (COUNT, AVG, SUM, GROUP BY) for large datasets instead of selecting raw rows.',
           inputSchema: z.object({
             sql: z
               .string()
@@ -195,7 +200,7 @@ export class ChatService {
               const result = await this.datasetService.executeQuery(
                 userId,
                 sql,
-                100,
+                10,
               );
               return {
                 success: true,

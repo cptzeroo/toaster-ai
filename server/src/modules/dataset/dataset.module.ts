@@ -8,12 +8,14 @@ import {
   FileMetadata,
   FileMetadataSchema,
 } from './schemas/file-metadata.schema';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: FileMetadata.name, schema: FileMetadataSchema },
     ]),
+    UserModule,
   ],
   controllers: [DatasetController],
   providers: [DatasetService, DuckDBRepository, FileMetadataRepository],

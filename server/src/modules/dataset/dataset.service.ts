@@ -13,6 +13,7 @@ import * as fs from 'fs/promises';
 import { DuckDBRepository, QueryResult } from './duckdb.repository';
 import { FileMetadataRepository } from './file-metadata.repository';
 import { FileMetadataDocument } from './schemas/file-metadata.schema';
+import { UserService } from '../user/user.service';
 import { ERROR_MESSAGES } from '@/common/constants/error-messages';
 
 const ALLOWED_EXTENSIONS = ['.csv', '.xlsx', '.xls'];
@@ -26,6 +27,7 @@ export class DatasetService implements OnModuleInit {
     private readonly duckdb: DuckDBRepository,
     private readonly fileRepo: FileMetadataRepository,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {
     this.dataDir = this.configService.get<string>('DATA_DIR', './data');
   }
@@ -75,17 +77,18 @@ export class DatasetService implements OnModuleInit {
   /**
    * Scan all user directories under DATA_DIR to discover
    * files that exist on disk but have no MongoDB record.
+   * Folder names are opaque dataDir values, not user IDs.
    */
   private async discoverAllFilesOnDisk(): Promise<void> {
-    let userDirs: string[];
+    let dirEntries: string[];
     try {
-      userDirs = await fs.readdir(this.dataDir);
+      dirEntries = await fs.readdir(this.dataDir);
     } catch {
       // DATA_DIR doesn't exist yet -- nothing to discover
       return;
     }
 
-    for (const dirName of userDirs) {
+    for (const dirName of dirEntries) {
       // Skip hidden files/folders and non-directory entries
       if (dirName.startsWith('.')) continue;
 
@@ -93,8 +96,19 @@ export class DatasetService implements OnModuleInit {
       const stat = await fs.stat(dirPath);
       if (!stat.isDirectory()) continue;
 
-      // dirName is the userId
-      await this.discoverFilesOnDisk(dirName);
+      // Resolve the dataDir folder back to a user
+      const user = await this.userService.findByDataDir(dirName);
+      if (!user) {
+        this.logger.warn(
+          `Skipping unknown data directory: "${dirName}" (no matching user)`,
+        );
+        continue;
+      }
+
+      await this.discoverFilesOnDisk(
+        (user as any)._id.toString(),
+        dirName,
+      );
     }
   }
 
@@ -118,7 +132,8 @@ export class DatasetService implements OnModuleInit {
 
   /**
    * Upload and register a file for a user.
-   * The file is saved to disk under DATA_DIR/<userId>/ and metadata is stored in MongoDB.
+   * The file is saved to disk under DATA_DIR/<dataDir>/ and metadata is stored in MongoDB.
+   * The folder name is an opaque random string -- never the MongoDB user ID.
    */
   async uploadFile(
     userId: string,
@@ -130,8 +145,9 @@ export class DatasetService implements OnModuleInit {
       throw new BadRequestException(ERROR_MESSAGES.DATASET.UNSUPPORTED_FORMAT);
     }
 
-    // Create user directory if it doesn't exist
-    const userDir = path.join(this.dataDir, userId);
+    // Resolve user's opaque data directory
+    const userDataDir = await this.userService.getDataDir(userId);
+    const userDir = path.join(this.dataDir, userDataDir);
     await fs.mkdir(userDir, { recursive: true });
 
     // Generate a safe stored name
@@ -152,8 +168,8 @@ export class DatasetService implements OnModuleInit {
       `File uploaded: ${file.originalname} (${(file.size / 1024 / 1024).toFixed(2)} MB) for user ${userId} -> ${storedName}`,
     );
 
-    // Save metadata to MongoDB
-    const metadata = await this.fileRepo.create({
+    // Save metadata to MongoDB (upsert to avoid race with sync)
+    const metadata = await this.fileRepo.upsertByStoredName({
       userId: new Types.ObjectId(userId),
       originalName: file.originalname,
       storedName,
@@ -279,7 +295,8 @@ export class DatasetService implements OnModuleInit {
     }
 
     // Phase 2: Discover files on disk that have no MongoDB record
-    await this.discoverFilesOnDisk(userId);
+    const userDataDir = await this.userService.getDataDir(userId);
+    await this.discoverFilesOnDisk(userId, userDataDir);
 
     // Return the fresh list after sync
     return this.fileRepo.findByUser(userId);
@@ -288,9 +305,14 @@ export class DatasetService implements OnModuleInit {
   /**
    * Scan the user's data directory for files that exist on disk
    * but have no matching MongoDB record, and register + load them.
+   * @param userId - MongoDB user ID (for metadata records)
+   * @param userDataDir - Opaque folder name under DATA_DIR
    */
-  private async discoverFilesOnDisk(userId: string): Promise<void> {
-    const userDir = path.join(this.dataDir, userId);
+  private async discoverFilesOnDisk(
+    userId: string,
+    userDataDir: string,
+  ): Promise<void> {
+    const userDir = path.join(this.dataDir, userDataDir);
 
     let entries: string[];
     try {
@@ -314,7 +336,7 @@ export class DatasetService implements OnModuleInit {
       );
       if (existing) continue;
 
-      // Unregistered file -- create metadata and load into DuckDB
+      // Unregistered file -- upsert metadata and load into DuckDB
       const filePath = path.resolve(path.join(userDir, fileName));
       const originalName = this.extractOriginalName(fileName);
       const tableName = this.generateTableName(originalName, userId);
@@ -325,7 +347,7 @@ export class DatasetService implements OnModuleInit {
         `Discovered unregistered file: "${originalName}" (${fileName}) for user ${userId}`,
       );
 
-      const metadata = await this.fileRepo.create({
+      const metadata = await this.fileRepo.upsertByStoredName({
         userId: new Types.ObjectId(userId),
         originalName,
         storedName: fileName,
@@ -406,13 +428,16 @@ export class DatasetService implements OnModuleInit {
    * Execute a SQL query against user's loaded data.
    * Validates that the query only references tables belonging to the user.
    */
+  private readonly MAX_QUERY_ROWS = 10;
+
   async executeQuery(
     userId: string,
     sql: string,
-    limit = 100,
+    limit = 10,
   ): Promise<QueryResult> {
-    // Wrap with LIMIT to prevent accidentally returning millions of rows
-    const safeSql = this.addLimitIfMissing(sql, limit);
+    // Wrap with LIMIT and enforce hard cap to prevent returning too many rows
+    const cappedLimit = Math.min(limit, this.MAX_QUERY_ROWS);
+    const safeSql = this.addLimitIfMissing(sql, cappedLimit);
 
     try {
       return await this.duckdb.query(safeSql);
@@ -503,9 +528,18 @@ export class DatasetService implements OnModuleInit {
 
   private addLimitIfMissing(sql: string, limit: number): string {
     const upperSql = sql.trim().toUpperCase();
-    if (!upperSql.includes('LIMIT')) {
-      return `${sql.trim()} LIMIT ${limit}`;
+    const limitMatch = upperSql.match(/LIMIT\s+(\d+)/);
+
+    if (limitMatch) {
+      // Existing LIMIT found -- cap it if it exceeds the hard max
+      const requested = parseInt(limitMatch[1], 10);
+      if (requested > this.MAX_QUERY_ROWS) {
+        return sql.replace(/LIMIT\s+\d+/i, `LIMIT ${this.MAX_QUERY_ROWS}`);
+      }
+      return sql;
     }
-    return sql;
+
+    // No LIMIT clause -- append one
+    return `${sql.trim()} LIMIT ${limit}`;
   }
 }

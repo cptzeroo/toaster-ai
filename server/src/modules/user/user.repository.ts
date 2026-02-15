@@ -37,4 +37,8 @@ export class UserRepository {
       tokenValidFrom: date,
     });
   }
+
+  async findByDataDir(dataDir: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ dataDir }).exec();
+  }
 }

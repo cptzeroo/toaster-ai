@@ -54,17 +54,19 @@ export class DuckDBRepository implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Load a CSV file into DuckDB as a table.
+   * Uses all_varchar=true to avoid type-detection failures on dirty data.
+   * The AI can CAST columns to the correct types in its SQL queries.
    */
   async loadCsv(filePath: string, tableName: string): Promise<QueryResult> {
     return this.withConnection(async (connection) => {
       // Drop existing table if it exists (for re-uploads)
       await connection.run(`DROP TABLE IF EXISTS "${tableName}"`);
 
-      // Create table from CSV with auto-detection and explicit quote handling
-      // Explicit quote='"' ensures fields like "val1,val2" are parsed correctly
-      // even when auto-detection fails to identify the quote character.
+      // Load with all_varchar=true to prevent conversion errors on messy data.
+      // quote='"' ensures fields like "val1,val2" are parsed correctly.
+      // ignore_errors=true skips malformed lines instead of aborting the entire load.
       await connection.run(
-        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv('${this.escapePath(filePath)}', auto_detect=true, quote='"')`,
+        `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv('${this.escapePath(filePath)}', auto_detect=true, all_varchar=true, quote='"', ignore_errors=true)`,
       );
 
       // Get schema info
