@@ -198,6 +198,20 @@ bun  run  dev:client
 bun  run  dev:server
 ```
 
+### Stack
+- React 18 with TypeScript -- UI framework
+- Vite 6 -- Build tool and dev server
+- Tailwind CSS 4 -- Utility-first styling
+- shadcn/ui -- Component library (Radix UI primitives)
+- Vercel AI SDK (ai, @ai-sdk/google, @ai-sdk/openai, @ai-sdk/anthropic) -- Multi-provider AI integration
+- NestJS 10 with TypeScript -- Backend framework
+- MongoDB (via Mongoose 9) -- Users, sessions, file metadata
+- DuckDB (@duckdb/node-api) -- In-memory analytical queries on uploaded data
+- Redis -- Optional caching layer for schemas and query results
+- JWT (@nestjs/jwt) -- Authentication and authorization
+- Swagger (@nestjs/swagger) -- API documentation
+- Zod -- Runtime validation for AI tool parameters
+
 ## Production
 
 Build and start:
